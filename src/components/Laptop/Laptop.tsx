@@ -760,7 +760,7 @@ export default function Laptop() {
   };
 
   const emails = [
-      { id: 1, from: 'Hardware Store', subject: 'Your Order #12345', body: 'Thank you for buying the Red Toolbox. Your default combination is 7-2-4.' },
+      { id: 1, from: 'Hardware Store', subject: 'Your Order #12345', body: 'Thank you for buying the Red Toolbox. Your default combination is 7-2-4. Do not forget it!' },
       { id: 2, from: 'Mom', subject: 'Dinner tonight?', body: 'Are you coming over for dinner? Bring the kids!' },
       { id: 3, from: 'Boss', subject: 'Meeting rescheduled', body: 'The meeting is moved to Monday.' },
   ];

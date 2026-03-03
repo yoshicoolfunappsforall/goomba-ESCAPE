@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Grid, Html } from '@react-three/drei';
+import { Grid } from '@react-three/drei';
 import { WALLS, FURNITURE, ITEMS } from '../../data/level';
 import { useGameStore } from '../../store/gameStore';
 
@@ -17,6 +17,12 @@ export function House() {
         <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
       </mesh>
       <Grid position={[0, 0.01, 0]} args={[100, 100]} cellSize={1} cellThickness={1} cellColor="#333" sectionSize={5} sectionThickness={1.5} sectionColor="#444" fadeDistance={30} infiniteGrid />
+
+      {/* Outside Grass */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 60]} receiveShadow>
+        <planeGeometry args={[120, 50]} />
+        <meshStandardMaterial color="#2E7D32" roughness={1} />
+      </mesh>
 
       {/* Ceiling */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4, 0]}>
@@ -143,42 +149,6 @@ export function House() {
             )
         }
 
-        if (item.name === 'TV') {
-            return (
-                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
-                    {/* TV Body */}
-                    <mesh castShadow>
-                        <boxGeometry args={[item.size[0], item.size[1], item.size[2]]} />
-                        <meshStandardMaterial color="#111" />
-                    </mesh>
-                    {/* Screen */}
-                    <Html 
-                        transform 
-                        position={[0.11, 0, 0]} 
-                        rotation={[0, Math.PI / 2, 0]}
-                        occlude
-                        style={{
-                            width: '868px',
-                            height: '488px',
-                            background: 'black'
-                        }}
-                        scale={0.0034}
-                    >
-                        <iframe 
-                            width="868" 
-                            height="488" 
-                            src="https://www.youtube.com/embed/cgRD2aj_GhM?autoplay=1&mute=0&controls=0&loop=1&playlist=cgRD2aj_GhM" 
-                            title="How To Grill A Sausage" 
-                            frameBorder="0" 
-                            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" 
-                            referrerPolicy="strict-origin-when-cross-origin" 
-                            allowFullScreen
-                        />
-                    </Html>
-                </group>
-            )
-        }
-
         if (item.name === 'Plant') {
             return (
                 <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
@@ -240,6 +210,121 @@ export function House() {
                     <meshStandardMaterial color={item.color} />
                 </mesh>
              )
+        }
+
+        if (item.name === 'Chair') {
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    {/* Seat */}
+                    <mesh position={[0, 0.4, 0]} castShadow>
+                        <boxGeometry args={[0.5, 0.1, 0.5]} />
+                        <meshStandardMaterial color={item.color} />
+                    </mesh>
+                    {/* Back */}
+                    <mesh position={[0, 0.9, -0.2]} castShadow>
+                        <boxGeometry args={[0.5, 1, 0.1]} />
+                        <meshStandardMaterial color={item.color} />
+                    </mesh>
+                    {/* Legs */}
+                    <mesh position={[-0.2, 0.2, -0.2]} castShadow>
+                        <boxGeometry args={[0.05, 0.4, 0.05]} />
+                        <meshStandardMaterial color="#333" />
+                    </mesh>
+                    <mesh position={[0.2, 0.2, -0.2]} castShadow>
+                        <boxGeometry args={[0.05, 0.4, 0.05]} />
+                        <meshStandardMaterial color="#333" />
+                    </mesh>
+                    <mesh position={[-0.2, 0.2, 0.2]} castShadow>
+                        <boxGeometry args={[0.05, 0.4, 0.05]} />
+                        <meshStandardMaterial color="#333" />
+                    </mesh>
+                    <mesh position={[0.2, 0.2, 0.2]} castShadow>
+                        <boxGeometry args={[0.05, 0.4, 0.05]} />
+                        <meshStandardMaterial color="#333" />
+                    </mesh>
+                </group>
+            )
+        }
+
+        if (item.name === 'Radio') {
+            const radioOn = useGameStore((state) => state.radioOn);
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    <mesh castShadow>
+                        <boxGeometry args={[item.size[0], item.size[1], item.size[2]]} />
+                        <meshStandardMaterial color="#333" />
+                    </mesh>
+                    {/* Speaker Mesh */}
+                    <mesh position={[0.2, 0, 0.26]}>
+                        <circleGeometry args={[0.15]} />
+                        <meshStandardMaterial color="#111" />
+                    </mesh>
+                    {/* Light */}
+                    <mesh position={[-0.3, 0.1, 0.26]}>
+                        <circleGeometry args={[0.05]} />
+                        <meshStandardMaterial color={radioOn ? "#0f0" : "#333"} emissive={radioOn ? "#0f0" : "#000"} />
+                    </mesh>
+                    {radioOn && <pointLight position={[0, 0, 0.5]} color="#0f0" distance={1} intensity={0.5} />}
+                </group>
+            )
+        }
+
+        if (item.name === 'Sink') {
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    <mesh castShadow>
+                        <boxGeometry args={[item.size[0], item.size[1], item.size[2]]} />
+                        <meshStandardMaterial color="white" />
+                    </mesh>
+                    {/* Faucet */}
+                    <mesh position={[0, 0.2, -0.3]}>
+                        <cylinderGeometry args={[0.05, 0.05, 0.2]} />
+                        <meshStandardMaterial color="silver" />
+                    </mesh>
+                </group>
+            )
+        }
+
+        if (item.name === 'ToiletPaper') {
+             return (
+                <mesh key={`furn-${index}`} position={new THREE.Vector3(...item.position)} castShadow>
+                    <cylinderGeometry args={[0.1, 0.1, 0.15]} rotation={[0, 0, Math.PI/2]} />
+                    <meshStandardMaterial color="white" />
+                </mesh>
+             )
+        }
+
+        if (item.name === 'Cabinet' || item.name === 'InsideFridge') {
+             // Just a box for now, maybe openable later
+             return (
+                <mesh key={`furn-${index}`} position={new THREE.Vector3(...item.position)} castShadow receiveShadow>
+                    <boxGeometry args={[item.size[0], item.size[1], item.size[2]]} />
+                    <meshStandardMaterial color={item.color} />
+                </mesh>
+             )
+        }
+
+        if (item.name === 'UnderBed') {
+            // Invisible trigger area or just dark space
+            return null;
+        }
+
+        if (item.name === 'TV') {
+            const tvOn = useGameStore((state) => state.tvOn);
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    <mesh castShadow>
+                        <boxGeometry args={[item.size[0], item.size[1], item.size[2]]} />
+                        <meshStandardMaterial color="#000" />
+                    </mesh>
+                    {/* Screen */}
+                    <mesh position={[0.11, 0, 0]}>
+                        <planeGeometry args={[item.size[1] * 0.9, item.size[2] * 0.9]} rotation={[0, Math.PI/2, 0]} />
+                        <meshStandardMaterial color={tvOn ? "#fff" : "#111"} emissive={tvOn ? "#fff" : "#000"} emissiveIntensity={tvOn ? 0.5 : 0} />
+                    </mesh>
+                    {tvOn && <pointLight position={[0.5, 0, 0]} color="#fff" distance={5} intensity={1} />}
+                </group>
+            )
         }
         
         return (
@@ -365,6 +450,57 @@ export function House() {
               <sphereGeometry args={[0.1]} />
               <meshStandardMaterial color="silver" />
           </mesh>
+      </group>
+
+      {/* Bedroom Door */}
+      {/* Gap at x=1, z=5. Width 4. */}
+      {/* Pivot should be at one side. Let's say left side (x=-1). */}
+      <group position={[-1, 2, 5]} rotation={[0, useGameStore((state) => state.bedroomDoorOpen) ? -2 : 0, 0]}>
+          {/* Door Mesh (Width 4, Height 4) */}
+          {/* Offset center by width/2 = 2 */}
+          <mesh position={[2, 0, 0]} castShadow receiveShadow>
+              <boxGeometry args={[4, 4, 0.2]} />
+              <meshStandardMaterial color="#5D4037" />
+          </mesh>
+          {/* Handle */}
+          <mesh position={[3.5, 0, 0.2]}>
+              <sphereGeometry args={[0.1]} />
+              <meshStandardMaterial color="silver" />
+          </mesh>
+      </group>
+
+      {/* Bathroom Door */}
+      {/* Gap at x=-5, z=10. Width 2. */}
+      {/* Pivot at z=9? */}
+      <group position={[-5, 2, 9]} rotation={[0, useGameStore((state) => state.bathroomDoorOpen) ? -2 : 0, 0]}>
+           {/* Door Mesh (Width 2, Height 4) - Rotated 90 deg relative to group if needed, or group rotated */}
+           {/* The wall is along Z axis. So door should be along Z. */}
+           {/* Group is at corner. Door extends along Z. */}
+           <mesh position={[0, 0, 1]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 2]} />
+               <meshStandardMaterial color="#5D4037" />
+           </mesh>
+           {/* Handle */}
+           <mesh position={[0.2, 0, 1.8]}>
+               <sphereGeometry args={[0.1]} />
+               <meshStandardMaterial color="silver" />
+           </mesh>
+      </group>
+
+      {/* Master Bedroom Door */}
+      {/* Gap at x=-25, z=10 to 15. Width 5. */}
+      {/* Pivot at z=10. */}
+      <group position={[-25, 2, 10]} rotation={[0, useGameStore((state) => state.masterBedroomDoorOpen) ? 2 : 0, 0]}>
+           {/* Door Mesh (Width 5, Height 4) */}
+           <mesh position={[0, 0, 2.5]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 5]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           {/* Handle */}
+           <mesh position={[0.2, 0, 4.5]}>
+               <sphereGeometry args={[0.1]} />
+               <meshStandardMaterial color="gold" />
+           </mesh>
       </group>
 
       {/* Exit Door */}

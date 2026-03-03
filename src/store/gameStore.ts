@@ -17,10 +17,28 @@ interface GameState {
   setVentOpen: (open: boolean) => void;
   storageOpen: boolean;
   setStorageOpen: (open: boolean) => void;
+  bedroomDoorOpen: boolean;
+  setBedroomDoorOpen: (open: boolean) => void;
+  bathroomDoorOpen: boolean;
+  setBathroomDoorOpen: (open: boolean) => void;
+  masterBedroomDoorOpen: boolean;
+  setMasterBedroomDoorOpen: (open: boolean) => void;
   toolboxOpen: boolean;
   setToolboxOpen: (open: boolean) => void;
+  toolboxKeypadOpen: boolean;
+  setToolboxKeypadOpen: (open: boolean) => void;
   toolboxCodeKnown: boolean;
   setToolboxCodeKnown: (known: boolean) => void;
+  gateKey: boolean;
+  setGateKey: (has: boolean) => void;
+  isHiding: boolean;
+  setIsHiding: (hiding: boolean) => void;
+  noiseLevel: number;
+  setNoiseLevel: (level: number) => void;
+  tvOn: boolean;
+  setTvOn: (on: boolean) => void;
+  radioOn: boolean;
+  setRadioOn: (on: boolean) => void;
   inventory: string[];
   addToInventory: (item: string) => void;
   interactionText: string | null;
@@ -45,10 +63,28 @@ export const useGameStore = create<GameState>((set) => ({
   setVentOpen: (open) => set({ ventOpen: open }),
   storageOpen: false,
   setStorageOpen: (open) => set({ storageOpen: open }),
+  bedroomDoorOpen: false,
+  setBedroomDoorOpen: (open) => set({ bedroomDoorOpen: open }),
+  bathroomDoorOpen: false,
+  setBathroomDoorOpen: (open) => set({ bathroomDoorOpen: open }),
+  masterBedroomDoorOpen: false,
+  setMasterBedroomDoorOpen: (open) => set({ masterBedroomDoorOpen: open }),
   toolboxOpen: false,
   setToolboxOpen: (open) => set({ toolboxOpen: open }),
+  toolboxKeypadOpen: false,
+  setToolboxKeypadOpen: (open) => set({ toolboxKeypadOpen: open }),
   toolboxCodeKnown: false,
   setToolboxCodeKnown: (known) => set({ toolboxCodeKnown: known }),
+  gateKey: false,
+  setGateKey: (has) => set({ gateKey: has }),
+  isHiding: false,
+  setIsHiding: (hiding) => set({ isHiding: hiding }),
+  noiseLevel: 0,
+  setNoiseLevel: (level) => set({ noiseLevel: level }),
+  tvOn: false,
+  setTvOn: (on) => set({ tvOn: on }),
+  radioOn: false,
+  setRadioOn: (on) => set({ radioOn: on }),
   inventory: [],
   addToInventory: (item) => set((state) => ({ inventory: [...state.inventory, item] })),
   interactionText: null,
@@ -62,8 +98,17 @@ export const useGameStore = create<GameState>((set) => ({
     safeKeypadOpen: false,
     ventOpen: false,
     storageOpen: false,
+    bedroomDoorOpen: false,
+    bathroomDoorOpen: false,
+    masterBedroomDoorOpen: false,
     toolboxOpen: false,
+    toolboxKeypadOpen: false,
     toolboxCodeKnown: false,
+    gateKey: false,
+    isHiding: false,
+    noiseLevel: 0,
+    tvOn: false,
+    radioOn: false,
     inventory: [],
     interactionText: null
   }),

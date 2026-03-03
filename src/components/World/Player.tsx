@@ -202,16 +202,84 @@ export function Player() {
     const toolboxPos = new THREE.Vector3(34, 3.1, 25);
     const distToToolbox = camera.position.distanceTo(toolboxPos);
 
+    // Radio is at [20, 1.5, 20]
+    const radioPos = new THREE.Vector3(20, 1.5, 20);
+    const distToRadio = camera.position.distanceTo(radioPos);
+
+    // Under Bed is at [-3, 0.5, -3]
+    const underBedPos = new THREE.Vector3(-3, 0.5, -3);
+    const distToUnderBed = camera.position.distanceTo(underBedPos);
+
+    // Cabinet is at [20, 0.5, 18]
+    const cabinetPos = new THREE.Vector3(20, 0.5, 18);
+    const distToCabinet = camera.position.distanceTo(cabinetPos);
+
+    // TV is at [-24, 2, 25]
+    const tvPos = new THREE.Vector3(-24, 2, 25);
+    const distToTV = camera.position.distanceTo(tvPos);
+
+    // Bedroom Door is at [-1, 2, 5] (pivot) -> Center is roughly [1, 2, 5]
+    const bedroomDoorPos = new THREE.Vector3(1, 2, 5);
+    const distToBedroomDoor = camera.position.distanceTo(bedroomDoorPos);
+
+    // Bathroom Door is at [-5, 2, 9] (pivot) -> Center is roughly [-5, 2, 10]
+    const bathroomDoorPos = new THREE.Vector3(-5, 2, 10);
+    const distToBathroomDoor = camera.position.distanceTo(bathroomDoorPos);
+
+    // Master Bedroom Door is at [-25, 2, 10] (pivot) -> Center roughly [-25, 2, 12.5]
+    const masterBedroomDoorPos = new THREE.Vector3(-25, 2, 12.5);
+    const distToMasterBedroomDoor = camera.position.distanceTo(masterBedroomDoorPos);
+
+    // Front Door (Exit) is at [0, 2, 35]
+    const frontDoorPos = new THREE.Vector3(0, 2, 35);
+    const distToFrontDoor = camera.position.distanceTo(frontDoorPos);
+
+    // Gate is at [0, 1.5, 50]
+    const gatePos = new THREE.Vector3(0, 1.5, 50);
+    const distToGate = camera.position.distanceTo(gatePos);
+
+    // Shed is at [30, 1.5, 40]
+    const shedPos = new THREE.Vector3(30, 1.5, 40);
+    const distToShed = camera.position.distanceTo(shedPos);
+
+    // Under Master Bed is at [-35, 0.2, 10]
+    const underMasterBedPos = new THREE.Vector3(-35, 0.2, 10);
+    const distToUnderMasterBed = camera.position.distanceTo(underMasterBedPos);
+
+    // Wardrobe is at [-40, 1.5, 5]
+    const wardrobePos = new THREE.Vector3(-40, 1.5, 5);
+    const distToWardrobe = camera.position.distanceTo(wardrobePos);
+
     const setInteractionText = useGameStore.getState().setInteractionText;
     const gameState = useGameStore.getState().gameState;
     const doorCodeKnown = useGameStore.getState().doorCodeKnown;
     const safeOpen = useGameStore.getState().safeOpen;
     const ventOpen = useGameStore.getState().ventOpen;
     const storageOpen = useGameStore.getState().storageOpen;
+    const bedroomDoorOpen = useGameStore.getState().bedroomDoorOpen;
+    const bathroomDoorOpen = useGameStore.getState().bathroomDoorOpen;
     const toolboxOpen = useGameStore.getState().toolboxOpen;
     const toolboxCodeKnown = useGameStore.getState().toolboxCodeKnown;
     const inventory = useGameStore.getState().inventory;
     const addToInventory = useGameStore.getState().addToInventory;
+    const isHiding = useGameStore.getState().isHiding;
+    const radioOn = useGameStore.getState().radioOn;
+    const tvOn = useGameStore.getState().tvOn;
+    const gateKey = useGameStore.getState().gateKey;
+    const setGateKey = useGameStore.getState().setGateKey;
+
+    if (isHiding) {
+        setInteractionText('Press E to Stop Hiding');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(false);
+            // Move player out slightly so they don't get stuck or hide immediately again
+            camera.position.y = 1.6;
+            KEYS.e = false;
+        }
+        // Force crouch
+        camera.position.y = 0.5;
+        return; // Skip other interactions while hiding
+    }
 
     if (distToLaptop < 3) {
       setInteractionText('Press E to use Laptop');
@@ -219,6 +287,105 @@ export function Player() {
          setGameState('laptop');
          KEYS.e = false; 
       }
+    } else if (distToBedroomDoor < 3) {
+        setInteractionText(bedroomDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
+        if (KEYS.e) {
+            useGameStore.getState().setBedroomDoorOpen(!bedroomDoorOpen);
+            KEYS.e = false;
+        }
+    } else if (distToBathroomDoor < 3) {
+        setInteractionText(bathroomDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
+        if (KEYS.e) {
+            useGameStore.getState().setBathroomDoorOpen(!bathroomDoorOpen);
+            KEYS.e = false;
+        }
+    } else if (distToMasterBedroomDoor < 3) {
+        const isOpen = useGameStore.getState().masterBedroomDoorOpen;
+        setInteractionText(isOpen ? 'Press E to Close Door' : 'Press E to Open Door');
+        if (KEYS.e) {
+            useGameStore.getState().setMasterBedroomDoorOpen(!isOpen);
+            KEYS.e = false;
+        }
+    } else if (distToRadio < 2) {
+        setInteractionText(radioOn ? 'Press E to Turn Off Radio' : 'Press E to Turn On Radio');
+        if (KEYS.e) {
+            useGameStore.getState().setRadioOn(!radioOn);
+            useGameStore.getState().setNoiseLevel(radioOn ? 0 : 80); // High noise if on
+            KEYS.e = false;
+        }
+    } else if (distToTV < 3) {
+        setInteractionText(tvOn ? 'Press E to Turn Off TV' : 'Press E to Turn On TV');
+        if (KEYS.e) {
+            useGameStore.getState().setTvOn(!tvOn);
+            useGameStore.getState().setNoiseLevel(tvOn ? 0 : 90); // TV is louder
+            KEYS.e = false;
+        }
+    } else if (distToToolbox < 2) {
+        if (toolboxOpen) {
+             setInteractionText('Toolbox is open. Empty.');
+        } else {
+             setInteractionText('Press E to Unlock Toolbox');
+             if (KEYS.e) {
+                 useGameStore.getState().setToolboxKeypadOpen(true);
+                 setGameState('laptop'); // Pause game/show cursor
+                 KEYS.e = false;
+             }
+        }
+    } else if (distToUnderBed < 2.5) {
+        setInteractionText('Press E to Hide Under Bed');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToUnderMasterBed < 2.5) {
+        setInteractionText('Press E to Hide Under Bed');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToWardrobe < 2.5) {
+        setInteractionText('Press E to Hide in Wardrobe');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToCabinet < 2.5) {
+        setInteractionText('Press E to Hide in Cabinet');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToFrontDoor < 3) {
+        if (inventory.includes('House Key')) {
+             setInteractionText('Press E to Go Outside');
+             if (KEYS.e) {
+                 camera.position.set(0, 1.6, 40);
+                 KEYS.e = false;
+             }
+        } else {
+             setInteractionText('Door is Locked. Need House Key.');
+        }
+    } else if (distToGate < 4) {
+        if (inventory.includes('Gate Key')) {
+             setInteractionText('Press E to Escape!');
+             if (KEYS.e) {
+                 setGameState('won');
+                 KEYS.e = false;
+             }
+        } else {
+             setInteractionText('Gate is Locked. Need Gate Key.');
+        }
+    } else if (distToShed < 3) {
+        if (!inventory.includes('Gate Key')) {
+            setInteractionText('Press E to Search Shed');
+            if (KEYS.e) {
+                addToInventory('Gate Key');
+                setInteractionText('Found Gate Key!');
+                KEYS.e = false;
+            }
+        } else {
+            setInteractionText('Shed is empty.');
+        }
     } else if (distToFlashlight < 2 && !inventory.includes('Flashlight')) {
         setInteractionText('Press E to take Flashlight');
         if (KEYS.e) {

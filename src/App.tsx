@@ -2,6 +2,7 @@ import { StrictMode, useEffect, Suspense } from 'react';
 import { useGameStore } from './store/gameStore';
 import Laptop from './components/Laptop/Laptop';
 import { SafeKeypad } from './components/UI/SafeKeypad';
+import { ToolboxKeypad } from './components/UI/ToolboxKeypad';
 import { Canvas } from '@react-three/fiber';
 import { PointerLockControls, Sky, Stars, Loader, Environment } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
@@ -126,6 +127,7 @@ export default function App() {
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
   const safeKeypadOpen = useGameStore((state) => state.safeKeypadOpen);
+  const toolboxKeypadOpen = useGameStore((state) => state.toolboxKeypadOpen);
 
   // Handle pointer lock unlock
   // We only want to go to menu if we unlocked MANUALLY (ESC), not if we won/lost
@@ -176,7 +178,8 @@ export default function App() {
       {gameState === 'playing' && <HUD />}
       {gameState === 'menu' && <Menu />}
       {gameState === 'laptop' && safeKeypadOpen && <SafeKeypad />}
-      {gameState === 'laptop' && !safeKeypadOpen && <Laptop />}
+      {gameState === 'laptop' && toolboxKeypadOpen && <ToolboxKeypad />}
+      {gameState === 'laptop' && !safeKeypadOpen && !toolboxKeypadOpen && <Laptop />}
       {gameState === 'caught' && <CaughtScreen />}
       {gameState === 'won' && <WinScreen />}
       <Loader />
