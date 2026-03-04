@@ -5,9 +5,42 @@ import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
 import { WALLS, FURNITURE } from '../../data/level';
 
-type EnemyState = 'patrol' | 'chase' | 'search' | 'investigate';
+interface EnemyProps {
+  initialPosition?: [number, number, number];
+  patrolPoints?: THREE.Vector3[];
+  speed?: number;
+  runSpeed?: number;
+  scale?: number;
+  textureUrl?: string;
+  name?: string;
+  viewDistance?: number;
+  fov?: number; // 0 to 1 (1 is 360, 0.5 is 180, etc - roughly)
+  catchDistance?: number;
+}
 
-export function Enemy() {
+export function Enemy({
+  initialPosition = [0, 1, 20],
+  patrolPoints = [
+    new THREE.Vector3(0, 1, 20),
+    new THREE.Vector3(-10, 1, 25),
+    new THREE.Vector3(5, 1, 25),
+    new THREE.Vector3(0, 1, 10),
+    new THREE.Vector3(20, 1, 20),
+    new THREE.Vector3(30, 1, 25),
+    new THREE.Vector3(-20, 1, 17.5),
+    new THREE.Vector3(-30, 1, 10),
+    new THREE.Vector3(45, 1, 15),
+    new THREE.Vector3(0, 1, 40),
+  ],
+  speed = 3.5,
+  runSpeed = 6.0,
+  scale = 1,
+  textureUrl = 'https://i.ibb.co/hRSfLyq9/2026-03-01-0tk-Kleki.png',
+  name = 'EVIL PARENT',
+  viewDistance = 25,
+  fov = 0.5,
+  catchDistance = 1.5
+}: EnemyProps) {
   const enemyRef = useRef<THREE.Group>(null);
   const { camera, scene } = useThree();
   const setGameState = useGameStore((state) => state.setGameState);
@@ -17,7 +50,7 @@ export function Enemy() {
   const tvOn = useGameStore((state) => state.tvOn);
   
   // Load sprite texture
-  const texture = useTexture('https://i.ibb.co/hRSfLyq9/2026-03-01-0tk-Kleki.png');
+  const texture = useTexture(textureUrl);
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   
@@ -27,26 +60,9 @@ export function Enemy() {
   const [lastKnownPos, setLastKnownPos] = useState<THREE.Vector3 | null>(null);
   const [searchTimer, setSearchTimer] = useState(0);
 
-  // Patrol points
-  const patrolPoints = [
-    new THREE.Vector3(0, 1, 20), // Hallway end
-    new THREE.Vector3(-10, 1, 25), // Kitchen
-    new THREE.Vector3(5, 1, 25), // Living room
-    new THREE.Vector3(0, 1, 10), // Hallway start
-    new THREE.Vector3(20, 1, 20), // Kitchen/Radio area
-    new THREE.Vector3(30, 1, 25), // Storage area
-    new THREE.Vector3(-30, 1, 10), // Master Bedroom
-    new THREE.Vector3(45, 1, 15), // Garage
-    new THREE.Vector3(0, 1, 40), // Outside Front
-  ];
-  
   const [patrolIndex, setPatrolIndex] = useState(0);
   const [recentPatrolIndices, setRecentPatrolIndices] = useState<number[]>([]);
-  const speed = 3.5; // Faster
-  const runSpeed = 6.0; // Much faster
-  const ENEMY_RADIUS = 0.6;
-  const VIEW_DISTANCE = 25; // Further vision
-  const FOV = 0.5; // Wider FOV (0.7 is narrow, 0 is 180 deg, 0.5 is 120 deg)
+  const ENEMY_RADIUS = 0.6 * scale;
 
   // Raycaster for vision
   const raycaster = useRef(new THREE.Raycaster());
@@ -77,6 +93,8 @@ export function Enemy() {
           }
       }
 
+      if (availableIndices.length === 0) return 0; // Fallback
+
       const nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
       
       // Update history
@@ -93,14 +111,14 @@ export function Enemy() {
   useEffect(() => {
     const unsub = useGameStore.subscribe((state, prevState) => {
         if (state.gameState === 'menu' && prevState.gameState !== 'menu' && enemyRef.current) {
-            enemyRef.current.position.set(0, 1, 20);
+            enemyRef.current.position.set(...initialPosition);
             setAiState('patrol');
             setPatrolIndex(0);
             setRecentPatrolIndices([]);
         }
     });
     return unsub;
-  }, []);
+  }, [initialPosition]);
 
   const checkCollision = (newPos: THREE.Vector3) => {
     // Check Walls
@@ -120,7 +138,13 @@ export function Enemy() {
       // Y Check (Height)
       const minY = wallPos.y - wallSize.y / 2;
       const maxY = wallPos.y + wallSize.y / 2;
-      if (maxY < 0.5 || minY > 1.8) continue;
+      
+      // Adjust collision height check based on enemy scale/position
+      // Enemy center is at Y, height is roughly 2*scale
+      const enemyBottom = newPos.y - 1 * scale;
+      const enemyTop = newPos.y + 1 * scale;
+
+      if (maxY < enemyBottom || minY > enemyTop) continue;
 
       // AABB Check
       const minX = wallPos.x - width / 2 - ENEMY_RADIUS;
@@ -141,7 +165,11 @@ export function Enemy() {
       // Y Check
       const minY = pos.y - size.y / 2;
       const maxY = pos.y + size.y / 2;
-      if (maxY < 0.5 || minY > 1.8) continue;
+      
+      const enemyBottom = newPos.y - 1 * scale;
+      const enemyTop = newPos.y + 1 * scale;
+      
+      if (maxY < enemyBottom || minY > enemyTop) continue;
 
       const minX = pos.x - size.x / 2 - ENEMY_RADIUS;
       const maxX = pos.x + size.x / 2 + ENEMY_RADIUS;
@@ -162,7 +190,22 @@ export function Enemy() {
       const toPlayer = new THREE.Vector3().subVectors(playerPos, enemyPos);
       const dist = toPlayer.length();
 
-      if (dist > VIEW_DISTANCE) return false;
+      if (dist > viewDistance) return false;
+
+      // FOV Check
+      const enemyDir = new THREE.Vector3();
+      enemyRef.current?.getWorldDirection(enemyDir);
+      const angle = enemyDir.angleTo(toPlayer);
+      
+      // fov prop: 1 = 360 (PI), 0.5 = 180 (PI/2), 0.25 = 90 (PI/4)
+      // Actually let's map it: fov is the dot product threshold or angle threshold?
+      // Let's treat fov as "percentage of 360 vision". 
+      // 1.0 = 360 deg. 0.5 = 180 deg (front). 0.25 = 90 deg.
+      // Angle is 0 to PI. 
+      // If fov is 1, we see everything.
+      // If fov is 0.5, we see if angle < PI/2.
+      const maxAngle = fov * Math.PI;
+      if (angle > maxAngle) return false;
 
       // Raycast check for walls/obstacles
       raycaster.current.set(enemyPos, toPlayer.clone().normalize());
@@ -192,23 +235,52 @@ export function Enemy() {
       return true;
   };
 
+  // Stuck check
+  const lastPos = useRef(new THREE.Vector3());
+  const stuckTimer = useRef(0);
+
   useFrame((state, delta) => {
     if (!enemyRef.current || gameState !== 'playing') return;
 
     const enemyPos = enemyRef.current.position.clone();
+    
+    // Check if stuck (only if moving)
+    if (aiState === 'patrol' || aiState === 'chase' || aiState === 'search' || aiState === 'investigate') {
+        if (enemyPos.distanceTo(lastPos.current) < 0.01 * delta * 60) { // Very small movement
+            stuckTimer.current += delta;
+            if (stuckTimer.current > 1.0) {
+                // Stuck for 1 second
+                // Force pick new point or jump slightly
+                stuckTimer.current = 0;
+                if (aiState === 'patrol') {
+                     const nextIdx = getNextPatrolIndex(patrolIndex, enemyPos);
+                     setPatrolIndex(nextIdx);
+                     // Teleport slightly towards center to unstuck?
+                     // enemyRef.current.position.y += 0.1;
+                }
+            }
+        } else {
+            stuckTimer.current = 0;
+        }
+        lastPos.current.copy(enemyPos);
+    }
+
     const playerPos = camera.position.clone();
     const distToPlayer = enemyPos.distanceTo(playerPos);
 
     // --- ALWAYS CHECK CATCH ---
-    if (distToPlayer < 1.5 && !isHiding) { // Increased catch radius
+    if (distToPlayer < catchDistance && !isHiding) { 
         setGameState('caught');
         return;
     }
 
     // --- State Transitions ---
 
-    // 1. Check Hearing (Radio/TV)
-    // Only if not already chasing
+    // 1. Check Hearing (Radio/TV) - Only main enemy hears? Or both?
+    // Let's assume only the main enemy (Evil Parent) cares about noise for now, or both.
+    // If name is "Kid", maybe they don't care about radio?
+    // Let's keep it general: everyone investigates noise if close enough?
+    // For now, global radio/tv check.
     if (aiState !== 'chase') {
         if (radioOn) {
             setAiState('investigate');
@@ -244,7 +316,7 @@ export function Enemy() {
         moveTarget = playerPos;
         currentSpeed = runSpeed;
         // Face player
-        enemyRef.current.lookAt(playerPos.x, 1, playerPos.z);
+        enemyRef.current.lookAt(playerPos.x, enemyPos.y, playerPos.z);
     } else if (aiState === 'search') {
         moveTarget = targetPos || lastKnownPos;
         currentSpeed = speed * 1.5;
@@ -318,19 +390,19 @@ export function Enemy() {
   });
 
   return (
-    <group ref={enemyRef} position={[0, 1, 20]}>
+    <group ref={enemyRef} position={initialPosition}>
       <Billboard follow={true} lockX={false} lockY={false} lockZ={false}>
         <mesh>
-          <planeGeometry args={[2, 2]} />
+          <planeGeometry args={[2 * scale, 2 * scale]} />
           <meshBasicMaterial map={texture} transparent alphaTest={0.5} side={THREE.DoubleSide} color={aiState === 'chase' ? '#ffaaaa' : 'white'} />
         </mesh>
       </Billboard>
       {/* Floating Name/Status */}
-      <Text position={[0, 1.2, 0]} fontSize={0.3} color={aiState === 'chase' ? 'red' : aiState === 'search' ? 'orange' : 'white'}>
-        {aiState === 'chase' ? '!!!' : aiState === 'search' ? '???' : aiState === 'investigate' ? '?!' : 'EVIL PARENT'}
+      <Text position={[0, 1.2 * scale, 0]} fontSize={0.3 * scale} color={aiState === 'chase' ? 'red' : aiState === 'search' ? 'orange' : 'white'}>
+        {aiState === 'chase' ? '!!!' : aiState === 'search' ? '???' : aiState === 'investigate' ? '?!' : name}
       </Text>
       {/* Flashlight/Vision Cone visualization (optional) */}
-      {aiState === 'chase' && <pointLight color="red" distance={5} intensity={2} />}
+      {aiState === 'chase' && <pointLight color="red" distance={5 * scale} intensity={2} />}
     </group>
   );
 }

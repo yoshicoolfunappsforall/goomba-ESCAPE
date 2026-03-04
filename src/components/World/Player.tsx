@@ -13,6 +13,7 @@ export function Player() {
   const setGameState = useGameStore((state) => state.setGameState);
   const [velocity] = useState(new THREE.Vector3());
   const [direction] = useState(new THREE.Vector3());
+  const lastValidPosition = useRef(new THREE.Vector3(0, 1.6, 0));
 
   useEffect(() => {
     // Reset keys on mount
@@ -88,6 +89,9 @@ export function Player() {
 
     // Check Furniture
     for (const item of FURNITURE) {
+      // Ignore non-collidable items
+      if (['Rug', 'LivingRug', 'Poster', 'CeilingLight', 'UnderBed', 'UnderMasterBed', 'Plant', 'Lamp', 'Book', 'ToiletPaper'].includes(item.name)) continue;
+
       const pos = new THREE.Vector3(...item.position);
       const size = new THREE.Vector3(...item.size);
       
@@ -106,27 +110,64 @@ export function Player() {
       }
     }
 
+    // Check Doors
+    const state = useGameStore.getState();
+    const doors = [
+        { position: [0, 2, 35], size: [4, 4, 0.2], open: false }, // Front Door
+        { position: [25, 2, 25], size: [0.2, 4, 3.8], open: state.storageOpen }, // Storage Door
+        { position: [1, 2, 5], size: [4, 4, 0.2], open: state.bedroomDoorOpen }, // Bedroom Door
+        { position: [-5, 2, 10], size: [0.2, 4, 2], open: state.bathroomDoorOpen }, // Bathroom Door
+        { position: [-25.5, 2, 17.5], size: [0.2, 4, 3], open: state.masterBedroomDoorOpen }, // Master Bedroom Door
+        { position: [5, 2, 9.5], size: [0.2, 4, 3], open: state.guestDoorOpen }, // Guest Room Door
+        { position: [20, 2, 15], size: [4, 4, 0.2], open: state.diningDoorOpen }, // Dining Room Door
+        { position: [-20, 2, 15], size: [4, 4, 0.2], open: state.studyDoorOpen } // Study Door
+    ];
+
+    for (const door of doors) {
+        if (door.open) continue;
+        
+        const pos = new THREE.Vector3(...door.position);
+        const size = new THREE.Vector3(...door.size);
+
+        // Y Check
+        const minY = pos.y - size.y / 2;
+        const maxY = pos.y + size.y / 2;
+        if (maxY < 0.5 || minY > 1.8) continue;
+
+        const minX = pos.x - size.x / 2 - PLAYER_RADIUS;
+        const maxX = pos.x + size.x / 2 + PLAYER_RADIUS;
+        const minZ = pos.z - size.z / 2 - PLAYER_RADIUS;
+        const maxZ = pos.z + size.z / 2 + PLAYER_RADIUS;
+
+        if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
+            return true;
+        }
+    }
+
     return false;
   };
 
   useFrame((state, delta) => {
     if (useGameStore.getState().gameState !== 'playing') return;
 
+    // Clamp delta to prevent huge jumps on lag (max 0.1s)
+    const dt = Math.min(delta, 0.1);
+
     // Movement Logic
     direction.z = Number(KEYS.s) - Number(KEYS.w);
     direction.x = Number(KEYS.a) - Number(KEYS.d);
     direction.normalize();
 
-    if (KEYS.w || KEYS.s) velocity.z -= direction.z * 60.0 * delta;
-    if (KEYS.a || KEYS.d) velocity.x -= direction.x * 60.0 * delta;
+    if (KEYS.w || KEYS.s) velocity.z -= direction.z * 60.0 * dt;
+    if (KEYS.a || KEYS.d) velocity.x -= direction.x * 60.0 * dt;
 
     // Friction
-    velocity.x -= velocity.x * 10.0 * delta;
-    velocity.z -= velocity.z * 10.0 * delta;
+    velocity.x -= velocity.x * 10.0 * dt;
+    velocity.z -= velocity.z * 10.0 * dt;
 
     // Calculate potential new position
-    const moveForward = velocity.z * delta * SPEED;
-    const moveRight = velocity.x * delta * SPEED;
+    const moveForward = velocity.z * dt * SPEED;
+    const moveRight = velocity.x * dt * SPEED;
 
     const currentPos = camera.position.clone();
     
@@ -174,9 +215,7 @@ export function Player() {
     const laptopPos = new THREE.Vector3(3, 2, -3);
     const distToLaptop = camera.position.distanceTo(laptopPos);
     
-    // Front Door is at [0, 2, 35]
-    const doorPos = new THREE.Vector3(0, 2, 35);
-    const distToDoor = camera.position.distanceTo(doorPos);
+
 
     // Safe is at [-14, 1, 6]
     const safePos = new THREE.Vector3(-14, 1, 6);
@@ -226,8 +265,8 @@ export function Player() {
     const bathroomDoorPos = new THREE.Vector3(-5, 2, 10);
     const distToBathroomDoor = camera.position.distanceTo(bathroomDoorPos);
 
-    // Master Bedroom Door is at [-25, 2, 10] (pivot) -> Center roughly [-25, 2, 12.5]
-    const masterBedroomDoorPos = new THREE.Vector3(-25, 2, 12.5);
+    // Master Bedroom Door is at [-25.5, 2, 16] (pivot) -> Center roughly [-25.5, 2, 17.5]
+    const masterBedroomDoorPos = new THREE.Vector3(-25.5, 2, 17.5);
     const distToMasterBedroomDoor = camera.position.distanceTo(masterBedroomDoorPos);
 
     // Front Door (Exit) is at [0, 2, 35]
@@ -250,6 +289,30 @@ export function Player() {
     const wardrobePos = new THREE.Vector3(-40, 1.5, 5);
     const distToWardrobe = camera.position.distanceTo(wardrobePos);
 
+    // Guest Door is at [5, 2, 9.5]
+    const guestDoorPos = new THREE.Vector3(5, 2, 9.5);
+    const distToGuestDoor = camera.position.distanceTo(guestDoorPos);
+
+    // Dining Door is at [20, 2, 15]
+    const diningDoorPos = new THREE.Vector3(20, 2, 15);
+    const distToDiningDoor = camera.position.distanceTo(diningDoorPos);
+
+    // Study Door is at [-20, 2, 15]
+    const studyDoorPos = new THREE.Vector3(-20, 2, 15);
+    const distToStudyDoor = camera.position.distanceTo(studyDoorPos);
+
+    // Study Key is at [13, 1.1, 2]
+    const studyKeyPos = new THREE.Vector3(13, 1.1, 2);
+    const distToStudyKey = camera.position.distanceTo(studyKeyPos);
+
+    // Safe Code is at [-20, 0.85, 5]
+    const safeCodePos = new THREE.Vector3(-20, 0.85, 5);
+    const distToSafeCode = camera.position.distanceTo(safeCodePos);
+
+    // Battery is at [25, 0.85, 7.5]
+    const batteryPos = new THREE.Vector3(25, 0.85, 7.5);
+    const distToBattery = camera.position.distanceTo(batteryPos);
+
     const setInteractionText = useGameStore.getState().setInteractionText;
     const gameState = useGameStore.getState().gameState;
     const doorCodeKnown = useGameStore.getState().doorCodeKnown;
@@ -258,6 +321,9 @@ export function Player() {
     const storageOpen = useGameStore.getState().storageOpen;
     const bedroomDoorOpen = useGameStore.getState().bedroomDoorOpen;
     const bathroomDoorOpen = useGameStore.getState().bathroomDoorOpen;
+    const guestDoorOpen = useGameStore.getState().guestDoorOpen;
+    const diningDoorOpen = useGameStore.getState().diningDoorOpen;
+    const studyDoorOpen = useGameStore.getState().studyDoorOpen;
     const toolboxOpen = useGameStore.getState().toolboxOpen;
     const toolboxCodeKnown = useGameStore.getState().toolboxCodeKnown;
     const inventory = useGameStore.getState().inventory;
@@ -322,7 +388,15 @@ export function Player() {
         }
     } else if (distToToolbox < 2) {
         if (toolboxOpen) {
-             setInteractionText('Toolbox is open. Empty.');
+             if (!inventory.includes('Screwdriver')) {
+                 setInteractionText('Press E to take Screwdriver');
+                 if (KEYS.e) {
+                     addToInventory('Screwdriver');
+                     KEYS.e = false;
+                 }
+             } else {
+                 setInteractionText('Toolbox is open. Empty.');
+             }
         } else {
              setInteractionText('Press E to Unlock Toolbox');
              if (KEYS.e) {
@@ -360,6 +434,7 @@ export function Player() {
              setInteractionText('Press E to Go Outside');
              if (KEYS.e) {
                  camera.position.set(0, 1.6, 40);
+                 lastValidPosition.current.copy(camera.position);
                  KEYS.e = false;
              }
         } else {
@@ -463,14 +538,54 @@ export function Player() {
                 KEYS.e = false;
             }
         }
-    } else if (distToDoor < 4) {
-        if (inventory.includes('House Key')) {
-             setInteractionText('Press E to Escape!');
+    } else if (distToGuestDoor < 3) {
+        setInteractionText(guestDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
+        if (KEYS.e) {
+            useGameStore.getState().setGuestDoorOpen(!guestDoorOpen);
+            KEYS.e = false;
+        }
+    } else if (distToDiningDoor < 3) {
+        setInteractionText(diningDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
+        if (KEYS.e) {
+            useGameStore.getState().setDiningDoorOpen(!diningDoorOpen);
+            KEYS.e = false;
+        }
+    } else if (distToStudyDoor < 3) {
+        if (studyDoorOpen) {
+             setInteractionText('Press E to Close Door');
              if (KEYS.e) {
-                setGameState('won');
+                 useGameStore.getState().setStudyDoorOpen(false);
+                 KEYS.e = false;
              }
         } else {
-            setInteractionText('Door Locked. Need House Key.');
+             if (inventory.includes('Study Key')) {
+                 setInteractionText('Press E to Open Door');
+                 if (KEYS.e) {
+                     useGameStore.getState().setStudyDoorOpen(true);
+                     KEYS.e = false;
+                 }
+             } else {
+                 setInteractionText('Locked. Need Study Key.');
+             }
+        }
+    } else if (distToStudyKey < 2 && !inventory.includes('Study Key')) {
+        setInteractionText('Press E to take Study Key');
+        if (KEYS.e) {
+            addToInventory('Study Key');
+            KEYS.e = false;
+        }
+    } else if (distToSafeCode < 2 && !inventory.includes('Safe Code')) {
+        setInteractionText('Press E to take Note (Safe Code)');
+        if (KEYS.e) {
+            addToInventory('Safe Code');
+            setInteractionText('Found Safe Code: 1-9-9-6');
+            KEYS.e = false;
+        }
+    } else if (distToBattery < 2 && !inventory.includes('Battery')) {
+        setInteractionText('Press E to take Battery');
+        if (KEYS.e) {
+            addToInventory('Battery');
+            KEYS.e = false;
         }
     } else {
       setInteractionText(null);

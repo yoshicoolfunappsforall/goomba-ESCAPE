@@ -21,7 +21,12 @@ export const WALLS: Wall[] = [
   { position: [1, 5, 5 + T/2], size: [4, 2, T] }, 
 
   // --- HALLWAY ---
-  { position: [5 + T/2, H/2, 10], size: [10, H, T], rotation: [0, Math.PI / 2, 0] }, 
+  // Right Wall (Shared with Guest Room) - Split for Door
+  { position: [5 + T/2, H/2, 6.5], size: [3, H, T], rotation: [0, Math.PI / 2, 0] }, // z=5 to 8
+  { position: [5 + T/2, 5, 9.5], size: [3, 2, T], rotation: [0, Math.PI / 2, 0] }, // Door Header z=8 to 11
+  { position: [5 + T/2, H/2, 13], size: [4, H, T], rotation: [0, Math.PI / 2, 0] }, // z=11 to 15
+
+  // Left Wall (Shared with Bathroom)
   { position: [-5 - T/2, H/2, 7], size: [4, H, T], rotation: [0, Math.PI / 2, 0] },
   { position: [-5 - T/2, 5, 10], size: [2, 2, T], rotation: [0, Math.PI / 2, 0] },
   { position: [-5 - T/2, H/2, 13], size: [4, H, T], rotation: [0, Math.PI / 2, 0] },
@@ -29,12 +34,61 @@ export const WALLS: Wall[] = [
   // --- BATHROOM ---
   { position: [-10, H/2, 5 - T/2], size: [10 + T, H, T] },
   { position: [-15 - T/2, H/2, 10], size: [10, H, T], rotation: [0, Math.PI / 2, 0] },
-  { position: [-10, H/2, 15 + T/2], size: [10 + T, H, T] },
+  // Front Wall (Shared with Living Room) - Defined below
+
+  // --- GUEST ROOM (Right of Hallway) ---
+  { position: [10, H/2, 0], size: [10, H, T] }, // Back Wall (z=0)
+  { position: [15 + T/2, H/2, 7.5], size: [15, H, T], rotation: [0, Math.PI / 2, 0] }, // Right Wall (Shared with Dining Room)
+  // Front Wall (Shared with Kitchen) - Defined below
+
+  // --- DINING ROOM (Right of Guest Room) ---
+  { position: [25, H/2, 0], size: [20, H, T] }, // Back Wall (z=0)
+  { position: [35 + T/2, H/2, 7.5], size: [15, H, T], rotation: [0, Math.PI / 2, 0] }, // Right Wall (Shared with Garage?)
+  // Front Wall (Shared with Kitchen) - Defined below
+
+  // --- STUDY (Left of Bathroom) ---
+  { position: [-20, H/2, 0], size: [10, H, T] }, // Back Wall (z=0)
+  { position: [-25 - T/2, H/2, 7.5], size: [15, H, T], rotation: [0, Math.PI / 2, 0] }, // Left Wall (Shared with Master Bedroom)
+  // Right Wall (Shared with Bathroom) - Check Bathroom Left Wall
+  // Bathroom Left Wall is at x=-15. Study Right Wall is at x=-15.
+  // Bathroom Left Wall: z=5 to 15.
+  // Study is z=0 to 15.
+  // Need to extend Bathroom Left Wall to z=0?
+  { position: [-15 - T/2, H/2, 2.5], size: [5, H, T], rotation: [0, Math.PI / 2, 0] }, // z=0 to 5 (Study/Bathroom divider extension)
 
   // --- LIVING ROOM / KITCHEN ---
-  { position: [-15, H/2, 15 - T/2], size: [20, H, T] },
-  { position: [15, H/2, 15 - T/2], size: [20, H, T] },
-  { position: [-25 - T/2, H/2, 25], size: [20, H, T], rotation: [0, Math.PI / 2, 0] },
+  // Back Wall (Left) - Separates Living Room from Bathroom & Study
+  // Range x=-25 to -5.
+  // Bathroom is x=-15 to -5. Study is x=-25 to -15.
+  // Need Door to Study (x=-20).
+  { position: [-10, H/2, 15 - T/2], size: [10, H, T] }, // Bathroom Front (x=-15 to -5)
+  { position: [-16.5, H/2, 15 - T/2], size: [3, H, T] }, // Study Front Right (x=-18 to -15)
+  { position: [-20, 5, 15 - T/2], size: [4, 2, T] }, // Study Door Header (x=-22 to -18)
+  { position: [-23.5, H/2, 15 - T/2], size: [3, H, T] }, // Study Front Left (x=-25 to -22)
+
+  // Back Wall (Right) - Separates Kitchen from Guest Room & Dining Room
+  // Range x=5 to 25.
+  // Guest Room is x=5 to 15. Dining Room is x=15 to 35.
+  // Need Door to Dining Room (x=20).
+  { position: [10, H/2, 15 - T/2], size: [10, H, T] }, // Guest Room Front (x=5 to 15)
+  { position: [16.5, H/2, 15 - T/2], size: [3, H, T] }, // Dining Room Front Left (x=15 to 18)
+  { position: [20, 5, 15 - T/2], size: [4, 2, T] }, // Dining Room Door Header (x=18 to 22)
+  { position: [23.5, H/2, 15 - T/2], size: [3, H, T] }, // Dining Room Front Right (x=22 to 25)
+  // Dining Room extends to x=35. Need more wall for Kitchen/Dining separation?
+  // Kitchen is x=15 to 25. Dining Room is x=15 to 35.
+  // So the wall at z=15 only goes up to x=25 (Kitchen limit).
+  // But Dining Room is wider.
+  // We need a wall at z=15 from x=25 to 35?
+  // No, Garage is at x=35.
+  // Storage is at x=25 to 35, z=20 to 30.
+  // So x=25 to 35, z=15 to 20 is empty? Or part of Kitchen?
+  // Let's extend the wall at z=15 to x=35.
+  { position: [30, H/2, 15 - T/2], size: [10, H, T] }, // Dining Room Front (x=25 to 35)
+
+  // Left Wall (Shared with Master Bedroom) - Split for Door
+  { position: [-25 - T/2, H/2, 8], size: [16, H, T], rotation: [0, Math.PI / 2, 0] }, // z=0 to 16
+  { position: [-25 - T/2, 5, 17.5], size: [3, 2, T], rotation: [0, Math.PI / 2, 0] }, // Door Header z=16 to 19
+  { position: [-25 - T/2, H/2, 27], size: [16, H, T], rotation: [0, Math.PI / 2, 0] }, // z=19 to 35
   
   // Right Wall (Split for Storage Room)
   { position: [25 + T/2, H/2, 19], size: [8, H, T], rotation: [0, Math.PI / 2, 0] },
@@ -54,9 +108,8 @@ export const WALLS: Wall[] = [
   { position: [30, H/2, 20 - T/2], size: [10 + T, H, T] },
   { position: [30, H/2, 30 + T/2], size: [10 + T, H, T] },
 
-  // --- MASTER BEDROOM (Left of Hallway) ---
-  { position: [-25, H/2, 5], size: [1, H, 10] }, // Wall separating Master from Hall/Bath
-  { position: [-25, H/2, 17.5], size: [1, H, 5] }, // Wall separating Master from Hall/Bath (Front part)
+  // --- MASTER BEDROOM (Left of Living Room) ---
+  // Right wall is shared with Living Room (defined above)
   { position: [-35, H/2, 0], size: [20, H, 1] }, // Back Wall Master
   { position: [-45, H/2, 10], size: [1, H, 20] }, // Left Wall Master
   { position: [-35, H/2, 20], size: [20, H, 1] }, // Front Wall Master
@@ -123,6 +176,7 @@ export const FURNITURE = [
   { position: [-18, 1.5, 7], size: [0.1, 2, 1.5], color: '#E0F7FA', name: 'Mirror' }, 
   { position: [-18, 1, 13], size: [3, 2, 3], color: '#B2EBF2', name: 'Shower' },
   { position: [-12, 0.8, 7], size: [0.3, 0.3, 0.3], color: '#fff', name: 'ToiletPaper' }, // New TP
+  { position: [-13, 3.8, 10], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' }, // Bathroom Light
 
   // Hiding Spots (Visual representation only, logic handled in Player/House)
   { position: [-3, 0.2, -3], size: [2.5, 0.4, 3.5], color: '#000', name: 'UnderBed' }, // Hiding Spot
@@ -140,15 +194,55 @@ export const FURNITURE = [
   { position: [-35, 0.5, 10], size: [4, 1, 6], color: '#3E2723', name: 'MasterBed' },
   { position: [-40, 1.5, 5], size: [1, 3, 2], color: '#5D4037', name: 'Wardrobe' },
   { position: [-30, 0.5, 18], size: [2, 1, 1], color: '#5D4037', name: 'Nightstand' },
+  { position: [-35, 3.8, 10], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' }, // Master Bedroom Light
 
   // Garage
   { position: [45, 1, 15], size: [4, 2, 6], color: '#ef5350', name: 'Car' },
   { position: [50, 1.5, 24], size: [2, 3, 1], color: '#607D8B', name: 'ToolRack' },
 
+  // --- NEW ROOMS FURNITURE ---
+  
+  // Guest Room (x=5 to 15, z=0 to 15)
+  { position: [10, 0.5, 5], size: [3, 1, 5], color: '#8E24AA', name: 'GuestBed' },
+  { position: [13, 0.5, 2], size: [2, 1, 1], color: '#5D4037', name: 'Nightstand' },
+  { position: [10, 3.8, 7.5], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' },
+
+  // Dining Room (x=15 to 35, z=0 to 15)
+  { position: [25, 0.75, 7.5], size: [8, 0.1, 4], color: '#3E2723', name: 'DiningTable' },
+  { position: [22, 0.5, 7.5], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+  { position: [28, 0.5, 7.5], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+  { position: [25, 0.5, 5], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+  { position: [25, 0.5, 10], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+  { position: [32, 1, 3], size: [4, 2, 2], color: '#000', name: 'Piano' },
+  { position: [25, 3.8, 7.5], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' },
+
+  // Study (x=-25 to -15, z=0 to 15)
+  { position: [-20, 0.75, 5], size: [4, 0.1, 2], color: '#3E2723', name: 'StudyDesk' },
+  { position: [-20, 0.5, 7], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+  { position: [-23, 1.5, 2], size: [1, 3, 4], color: '#3E2723', name: 'Bookshelf' },
+  { position: [-17, 1.5, 2], size: [1, 3, 4], color: '#3E2723', name: 'Bookshelf' },
+  { position: [-20, 3.8, 7.5], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' },
+
   // Outside
   { position: [30, 1.5, 40], size: [3, 3, 3], color: '#795548', name: 'Shed' }, 
   { position: [-20, 1, 40], size: [1, 2, 1], color: '#8D6E63', name: 'TreeTrunk' },
   { position: [-20, 3, 40], size: [3, 3, 3], color: '#2E7D32', name: 'TreeLeaves' },
+  { position: [15, 1, 45], size: [1, 2, 1], color: '#8D6E63', name: 'TreeTrunk' },
+  { position: [15, 3, 45], size: [3, 3, 3], color: '#2E7D32', name: 'TreeLeaves' },
+  { position: [-35, 1, 42], size: [1, 2, 1], color: '#8D6E63', name: 'TreeTrunk' },
+  { position: [-35, 3, 42], size: [3, 3, 3], color: '#2E7D32', name: 'TreeLeaves' },
+  { position: [40, 1, 38], size: [1, 2, 1], color: '#8D6E63', name: 'TreeTrunk' },
+  { position: [40, 3, 38], size: [3, 3, 3], color: '#2E7D32', name: 'TreeLeaves' },
+  
+  // Bushes
+  { position: [-10, 0.5, 38], size: [1.5, 1, 1.5], color: '#4CAF50', name: 'Bush' },
+  { position: [10, 0.5, 38], size: [1.5, 1, 1.5], color: '#4CAF50', name: 'Bush' },
+  { position: [-25, 0.5, 45], size: [2, 1.2, 2], color: '#4CAF50', name: 'Bush' },
+  { position: [25, 0.5, 42], size: [1.8, 1, 1.8], color: '#4CAF50', name: 'Bush' },
+
+  // Path
+  { position: [0, 0.05, 42.5], size: [3, 0.1, 15], color: '#9E9E9E', name: 'Path' },
+
   { position: [-35, 0.2, 10], size: [3.5, 0.4, 5.5], color: '#000', name: 'UnderMasterBed' }, // Hiding Spot
 ];
 
@@ -158,4 +252,9 @@ export const ITEMS = [
     { position: [4.5, 0.5, 10], name: 'House Key', type: 'key' }, // Inside Vent
     { position: [34, 3.2, 25], name: 'Screwdriver', type: 'tool' }, // Inside Toolbox (y adjusted)
     { position: [30, 2, 40], name: 'Gate Key', type: 'key' }, // In Shed
+    
+    // New Items
+    { position: [13, 1.1, 2], name: 'Study Key', type: 'key' }, // On Guest Room Nightstand
+    { position: [-20, 0.85, 5], name: 'Safe Code', type: 'paper' }, // On Study Desk
+    { position: [25, 0.85, 7.5], name: 'Battery', type: 'item' }, // On Dining Table
 ];

@@ -23,6 +23,14 @@ interface GameState {
   setBathroomDoorOpen: (open: boolean) => void;
   masterBedroomDoorOpen: boolean;
   setMasterBedroomDoorOpen: (open: boolean) => void;
+  guestDoorOpen: boolean;
+  setGuestDoorOpen: (open: boolean) => void;
+  studyDoorOpen: boolean;
+  setStudyDoorOpen: (open: boolean) => void;
+  diningDoorOpen: boolean;
+  setDiningDoorOpen: (open: boolean) => void;
+  pianoPlaying: boolean;
+  setPianoPlaying: (playing: boolean) => void;
   toolboxOpen: boolean;
   setToolboxOpen: (open: boolean) => void;
   toolboxKeypadOpen: boolean;
@@ -69,6 +77,14 @@ export const useGameStore = create<GameState>((set) => ({
   setBathroomDoorOpen: (open) => set({ bathroomDoorOpen: open }),
   masterBedroomDoorOpen: false,
   setMasterBedroomDoorOpen: (open) => set({ masterBedroomDoorOpen: open }),
+  guestDoorOpen: false,
+  setGuestDoorOpen: (open) => set({ guestDoorOpen: open }),
+  studyDoorOpen: false,
+  setStudyDoorOpen: (open) => set({ studyDoorOpen: open }),
+  diningDoorOpen: false,
+  setDiningDoorOpen: (open) => set({ diningDoorOpen: open }),
+  pianoPlaying: false,
+  setPianoPlaying: (playing) => set({ pianoPlaying: playing }),
   toolboxOpen: false,
   setToolboxOpen: (open) => set({ toolboxOpen: open }),
   toolboxKeypadOpen: false,
@@ -101,6 +117,10 @@ export const useGameStore = create<GameState>((set) => ({
     bedroomDoorOpen: false,
     bathroomDoorOpen: false,
     masterBedroomDoorOpen: false,
+    guestDoorOpen: false,
+    studyDoorOpen: false,
+    diningDoorOpen: false,
+    pianoPlaying: false,
     toolboxOpen: false,
     toolboxKeypadOpen: false,
     toolboxCodeKnown: false,

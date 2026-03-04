@@ -1,5 +1,5 @@
 import * as THREE from 'three';
-import { Grid } from '@react-three/drei';
+import { Grid, Text } from '@react-three/drei';
 import { WALLS, FURNITURE, ITEMS } from '../../data/level';
 import { useGameStore } from '../../store/gameStore';
 
@@ -140,8 +140,8 @@ export function House() {
                             <meshStandardMaterial color={item.color} metalness={0.6} roughness={0.4} />
                         </mesh>
                         {/* Handle */}
-                        <mesh position={[0, 0.2, item.size[2]/2]}>
-                            <cylinderGeometry args={[0.02, 0.02, 0.3]} rotation={[0, 0, Math.PI/2]} />
+                        <mesh position={[0, 0.2, item.size[2]/2]} rotation={[0, 0, Math.PI/2]}>
+                            <cylinderGeometry args={[0.02, 0.02, 0.3]} />
                             <meshStandardMaterial color="#222" />
                         </mesh>
                     </group>
@@ -162,6 +162,18 @@ export function House() {
                         <dodecahedronGeometry args={[0.6]} />
                         <meshStandardMaterial color="#2E7D32" />
                     </mesh>
+                </group>
+            )
+        }
+
+        if (item.name === 'CeilingLight') {
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    <mesh position={[0, 0, 0]}>
+                        <cylinderGeometry args={[0.5, 0.5, 0.1]} />
+                        <meshStandardMaterial color="#eee" emissive="#fff" emissiveIntensity={0.5} />
+                    </mesh>
+                    <pointLight position={[0, -0.5, 0]} intensity={0.8} distance={15} color="#fff" decay={2} />
                 </group>
             )
         }
@@ -287,8 +299,8 @@ export function House() {
 
         if (item.name === 'ToiletPaper') {
              return (
-                <mesh key={`furn-${index}`} position={new THREE.Vector3(...item.position)} castShadow>
-                    <cylinderGeometry args={[0.1, 0.1, 0.15]} rotation={[0, 0, Math.PI/2]} />
+                <mesh key={`furn-${index}`} position={new THREE.Vector3(...item.position)} rotation={[0, 0, Math.PI/2]} castShadow>
+                    <cylinderGeometry args={[0.1, 0.1, 0.15]} />
                     <meshStandardMaterial color="white" />
                 </mesh>
              )
@@ -318,8 +330,8 @@ export function House() {
                         <meshStandardMaterial color="#000" />
                     </mesh>
                     {/* Screen */}
-                    <mesh position={[0.11, 0, 0]}>
-                        <planeGeometry args={[item.size[1] * 0.9, item.size[2] * 0.9]} rotation={[0, Math.PI/2, 0]} />
+                    <mesh position={[0.11, 0, 0]} rotation={[0, Math.PI/2, 0]}>
+                        <planeGeometry args={[item.size[1] * 0.9, item.size[2] * 0.9]} />
                         <meshStandardMaterial color={tvOn ? "#fff" : "#111"} emissive={tvOn ? "#fff" : "#000"} emissiveIntensity={tvOn ? 0.5 : 0} />
                     </mesh>
                     {tvOn && <pointLight position={[0.5, 0, 0]} color="#fff" distance={5} intensity={1} />}
@@ -412,6 +424,56 @@ export function House() {
              )
           }
 
+          if (item.name === 'Study Key') {
+              return (
+                  <group key={`item-${index}`} position={new THREE.Vector3(...item.position)}>
+                      <mesh castShadow position={[0, 0, 0]} rotation={[0, 0, Math.PI/2]}>
+                          <cylinderGeometry args={[0.05, 0.05, 0.3]} />
+                          <meshStandardMaterial color="silver" metalness={0.8} roughness={0.1} />
+                      </mesh>
+                      <mesh castShadow position={[0, 0.1, 0]} rotation={[0, 0, 0]}>
+                          <torusGeometry args={[0.1, 0.02, 8, 16]} />
+                          <meshStandardMaterial color="silver" metalness={0.8} roughness={0.1} />
+                      </mesh>
+                      <pointLight intensity={1} color="silver" distance={2} />
+                  </group>
+              )
+          }
+
+          if (item.name === 'Safe Code') {
+              return (
+                  <mesh key={`item-${index}`} position={new THREE.Vector3(...item.position)} rotation={[-Math.PI/2, 0, 0]} castShadow>
+                      <planeGeometry args={[0.3, 0.4]} />
+                      <meshStandardMaterial color="#fff" />
+                      {/* Text simulation */}
+                      <mesh position={[0, 0, 0.01]}>
+                          <planeGeometry args={[0.2, 0.02]} />
+                          <meshStandardMaterial color="#000" />
+                      </mesh>
+                      <mesh position={[0, 0.1, 0.01]}>
+                          <planeGeometry args={[0.2, 0.02]} />
+                          <meshStandardMaterial color="#000" />
+                      </mesh>
+                  </mesh>
+              )
+          }
+
+          if (item.name === 'Battery') {
+              return (
+                  <group key={`item-${index}`} position={new THREE.Vector3(...item.position)}>
+                      <mesh castShadow rotation={[Math.PI/2, 0, 0]}>
+                          <cylinderGeometry args={[0.05, 0.05, 0.2]} />
+                          <meshStandardMaterial color="#000" />
+                      </mesh>
+                      <mesh position={[0, 0, 0.11]} rotation={[Math.PI/2, 0, 0]}>
+                          <cylinderGeometry args={[0.02, 0.02, 0.02]} />
+                          <meshStandardMaterial color="#silver" />
+                      </mesh>
+                      <pointLight intensity={0.5} color="green" distance={1} />
+                  </group>
+              )
+          }
+
           return null;
       })}
       
@@ -472,35 +534,210 @@ export function House() {
       {/* Bathroom Door */}
       {/* Gap at x=-5, z=10. Width 2. */}
       {/* Pivot at z=9? */}
-      <group position={[-5, 2, 9]} rotation={[0, useGameStore((state) => state.bathroomDoorOpen) ? -2 : 0, 0]}>
-           {/* Door Mesh (Width 2, Height 4) - Rotated 90 deg relative to group if needed, or group rotated */}
-           {/* The wall is along Z axis. So door should be along Z. */}
-           {/* Group is at corner. Door extends along Z. */}
-           <mesh position={[0, 0, 1]} castShadow receiveShadow>
-               <boxGeometry args={[0.2, 4, 2]} />
-               <meshStandardMaterial color="#5D4037" />
+      <group position={[-5, 2, 9]}>
+           {/* Frame */}
+           <mesh position={[0, 0, -0.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
+               <meshStandardMaterial color="#3E2723" />
            </mesh>
-           {/* Handle */}
-           <mesh position={[0.2, 0, 1.8]}>
-               <sphereGeometry args={[0.1]} />
-               <meshStandardMaterial color="silver" />
+           <mesh position={[0, 0, 2.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
+               <meshStandardMaterial color="#3E2723" />
            </mesh>
+           <mesh position={[0, 2.1, 1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 0.2, 2.4]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           {/* Sign */}
+           <Text
+                position={[0.2, 2.5, 1]}
+                rotation={[0, Math.PI/2, 0]}
+                fontSize={0.4}
+                color="black"
+                anchorX="center"
+                anchorY="middle"
+           >
+                BATHROOM
+           </Text>
+
+           {/* Door Group */}
+           <group rotation={[0, useGameStore((state) => state.bathroomDoorOpen) ? -2 : 0, 0]}>
+               {/* Door Mesh (Width 2, Height 4) */}
+               <mesh position={[0, 0, 1]} castShadow receiveShadow>
+                   <boxGeometry args={[0.2, 4, 2]} />
+                   <meshStandardMaterial color="#5D4037" />
+               </mesh>
+               {/* Handle */}
+               <mesh position={[0.2, 0, 1.8]}>
+                   <sphereGeometry args={[0.1]} />
+                   <meshStandardMaterial color="silver" />
+               </mesh>
+           </group>
       </group>
 
       {/* Master Bedroom Door */}
-      {/* Gap at x=-25, z=10 to 15. Width 5. */}
-      {/* Pivot at z=10. */}
-      <group position={[-25, 2, 10]} rotation={[0, useGameStore((state) => state.masterBedroomDoorOpen) ? 2 : 0, 0]}>
-           {/* Door Mesh (Width 5, Height 4) */}
-           <mesh position={[0, 0, 2.5]} castShadow receiveShadow>
-               <boxGeometry args={[0.2, 4, 5]} />
+      {/* Gap at x=-25.5, z=16 to 19. Width 3. */}
+      {/* Pivot at z=16. */}
+      <group position={[-25.5, 2, 16]}>
+           {/* Frame */}
+           <mesh position={[0, 0, -0.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
                <meshStandardMaterial color="#3E2723" />
            </mesh>
-           {/* Handle */}
-           <mesh position={[0.2, 0, 4.5]}>
-               <sphereGeometry args={[0.1]} />
-               <meshStandardMaterial color="gold" />
+           <mesh position={[0, 0, 3.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
+               <meshStandardMaterial color="#3E2723" />
            </mesh>
+           <mesh position={[0, 2.1, 1.5]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 0.2, 3.4]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           {/* Sign */}
+           <Text
+                position={[0.2, 2.5, 1.5]}
+                rotation={[0, Math.PI/2, 0]}
+                fontSize={0.4}
+                color="black"
+                anchorX="center"
+                anchorY="middle"
+           >
+                MASTER BEDROOM
+           </Text>
+
+           {/* Door Group */}
+           <group rotation={[0, useGameStore((state) => state.masterBedroomDoorOpen) ? 2 : 0, 0]}>
+               {/* Door Mesh (Width 3, Height 4) */}
+               <mesh position={[0, 0, 1.5]} castShadow receiveShadow>
+                   <boxGeometry args={[0.2, 4, 3]} />
+                   <meshStandardMaterial color="#3E2723" />
+               </mesh>
+               {/* Handle */}
+               <mesh position={[0.2, 0, 2.5]}>
+                   <sphereGeometry args={[0.1]} />
+                   <meshStandardMaterial color="gold" />
+               </mesh>
+           </group>
+      </group>
+
+      {/* Guest Room Door */}
+      {/* Gap at x=5, z=8 to 11. Width 3. */}
+      {/* Pivot at z=8. */}
+      <group position={[5, 2, 8]}>
+           {/* Frame */}
+           <mesh position={[0, 0, -0.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[0, 0, 3.1]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 4, 0.2]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[0, 2.1, 1.5]} castShadow receiveShadow>
+               <boxGeometry args={[0.3, 0.2, 3.4]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+            {/* Sign */}
+           <Text
+                position={[-0.2, 2.5, 1.5]}
+                rotation={[0, -Math.PI/2, 0]}
+                fontSize={0.4}
+                color="black"
+                anchorX="center"
+                anchorY="middle"
+           >
+                GUEST ROOM
+           </Text>
+
+           {/* Door Group */}
+           <group rotation={[0, useGameStore((state) => state.guestDoorOpen) ? 2 : 0, 0]}>
+               {/* Door Mesh (Width 3, Height 4) */}
+               <mesh position={[0, 0, 1.5]} castShadow receiveShadow>
+                   <boxGeometry args={[0.2, 4, 3]} />
+                   <meshStandardMaterial color="#5D4037" />
+               </mesh>
+               {/* Handle */}
+               <mesh position={[-0.2, 0, 2.5]}>
+                   <sphereGeometry args={[0.1]} />
+                   <meshStandardMaterial color="silver" />
+               </mesh>
+           </group>
+      </group>
+
+      {/* Dining Room Door */}
+      {/* Gap at x=18 to 22. Width 4. */}
+      {/* Pivot at x=18. */}
+      <group position={[18, 2, 15]}>
+           {/* Frame */}
+           <mesh position={[-0.1, 0, 0]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[4.1, 0, 0]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[2, 2.1, 0]} castShadow receiveShadow>
+               <boxGeometry args={[4.4, 0.2, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+
+           {/* Door Group */}
+           <group rotation={[0, useGameStore((state) => state.diningDoorOpen) ? -2 : 0, 0]}>
+               {/* Door Mesh (Width 4, Height 4) */}
+               <mesh position={[2, 0, 0]} castShadow receiveShadow>
+                   <boxGeometry args={[4, 4, 0.2]} />
+                   <meshStandardMaterial color="#5D4037" />
+               </mesh>
+               {/* Handle */}
+               <mesh position={[3.5, 0, 0.2]}>
+                   <sphereGeometry args={[0.1]} />
+                   <meshStandardMaterial color="silver" />
+               </mesh>
+           </group>
+      </group>
+
+      {/* Study Door */}
+      {/* Gap at x=-22 to -18. Width 4. */}
+      {/* Pivot at x=-18. */}
+      <group position={[-18, 2, 15]}>
+           {/* Frame */}
+           <mesh position={[0.1, 0, 0]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[-4.1, 0, 0]} castShadow receiveShadow>
+               <boxGeometry args={[0.2, 4, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+           <mesh position={[-2, 2.1, 0]} castShadow receiveShadow>
+               <boxGeometry args={[4.4, 0.2, 0.3]} />
+               <meshStandardMaterial color="#3E2723" />
+           </mesh>
+            {/* Sign */}
+           <Text
+                position={[-2, 2.5, 0.2]}
+                rotation={[0, 0, 0]}
+                fontSize={0.4}
+                color="black"
+                anchorX="center"
+                anchorY="middle"
+           >
+                STUDY
+           </Text>
+
+           {/* Door Group */}
+           <group rotation={[0, useGameStore((state) => state.studyDoorOpen) ? 2 : 0, 0]}>
+               {/* Door Mesh (Width 4, Height 4) */}
+               <mesh position={[-2, 0, 0]} castShadow receiveShadow>
+                   <boxGeometry args={[4, 4, 0.2]} />
+                   <meshStandardMaterial color="#3E2723" />
+               </mesh>
+               {/* Handle */}
+               <mesh position={[-3.5, 0, 0.2]}>
+                   <sphereGeometry args={[0.1]} />
+                   <meshStandardMaterial color="gold" />
+               </mesh>
+           </group>
       </group>
 
       {/* Exit Door */}

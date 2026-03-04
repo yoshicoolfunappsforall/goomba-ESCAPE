@@ -1,10 +1,10 @@
-import { StrictMode, useEffect, Suspense } from 'react';
+import { StrictMode, useEffect, Suspense, useState } from 'react';
 import { useGameStore } from './store/gameStore';
 import Laptop from './components/Laptop/Laptop';
 import { SafeKeypad } from './components/UI/SafeKeypad';
 import { ToolboxKeypad } from './components/UI/ToolboxKeypad';
 import { Canvas } from '@react-three/fiber';
-import { PointerLockControls, Sky, Stars, Loader, Environment } from '@react-three/drei';
+import { PointerLockControls, Sky, Stars, Loader, Environment, PerformanceMonitor, BakeShadows } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import { House } from './components/World/House';
 import { Player } from './components/World/Player';
@@ -128,6 +128,8 @@ export default function App() {
   const setGameState = useGameStore((state) => state.setGameState);
   const safeKeypadOpen = useGameStore((state) => state.safeKeypadOpen);
   const toolboxKeypadOpen = useGameStore((state) => state.toolboxKeypadOpen);
+  const [dpr, setDpr] = useState(1.5);
+  const [lowPerformance, setLowPerformance] = useState(false);
 
   // Handle pointer lock unlock
   // We only want to go to menu if we unlocked MANUALLY (ESC), not if we won/lost
@@ -142,22 +144,31 @@ export default function App() {
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
       {/* 3D World Layer */}
       <div className="absolute inset-0 z-0">
-        <Canvas shadows camera={{ fov: 75, position: [0, 1.6, 0] }}>
+        <Canvas shadows dpr={dpr} camera={{ fov: 75, position: [0, 1.6, 0] }}>
+            <PerformanceMonitor 
+                onIncline={() => { setDpr(2); setLowPerformance(false); }} 
+                onDecline={() => { setDpr(1); setLowPerformance(true); }}
+            />
+            
             <Sky sunPosition={[100, 20, 100]} turbidity={0.5} rayleigh={0.5} mieCoefficient={0.005} mieDirectionalG={0.8} />
-            <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+            {!lowPerformance && <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />}
             <Environment preset="night" />
             
             <ambientLight intensity={0.1} />
-            <pointLight position={[0, 4, 0]} intensity={0.5} castShadow shadow-mapSize={[1024, 1024]} />
-            <pointLight position={[0, 4, 10]} intensity={0.3} castShadow shadow-mapSize={[1024, 1024]} />
-            <pointLight position={[0, 4, 25]} intensity={0.5} castShadow shadow-mapSize={[1024, 1024]} />
+            {/* Reduced shadow map size for performance */}
+            <pointLight position={[0, 4, 0]} intensity={0.5} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
+            <pointLight position={[0, 4, 10]} intensity={0.3} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
+            <pointLight position={[0, 4, 25]} intensity={0.5} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             
+            {/* Bake static shadows if possible, though we have dynamic lights */}
+            {/* <BakeShadows /> */}
+
             <Suspense fallback={null}>
               <House />
               <Enemy />
             </Suspense>
 
-            {gameState === 'playing' && (
+            {gameState === 'playing' && !lowPerformance && (
             <EffectComposer>
                 <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} height={300} intensity={0.5} />
                 <Noise opacity={0.1} />
