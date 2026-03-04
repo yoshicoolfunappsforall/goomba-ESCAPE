@@ -152,6 +152,7 @@ export function Player() {
 
     // Clamp delta to prevent huge jumps on lag (max 0.1s)
     const dt = Math.min(delta, 0.1);
+    const inventory = useGameStore.getState().inventory;
 
     // Movement Logic
     direction.z = Number(KEYS.s) - Number(KEYS.w);
@@ -165,9 +166,13 @@ export function Player() {
     velocity.x -= velocity.x * 10.0 * dt;
     velocity.z -= velocity.z * 10.0 * dt;
 
+    // Speed Boost Logic
+    const hasEnergyDrink = inventory.includes('Energy Drink');
+    const currentSpeed = hasEnergyDrink ? SPEED * 1.5 : SPEED;
+
     // Calculate potential new position
-    const moveForward = velocity.z * dt * SPEED;
-    const moveRight = velocity.x * dt * SPEED;
+    const moveForward = velocity.z * dt * currentSpeed;
+    const moveRight = velocity.x * dt * currentSpeed;
 
     const currentPos = camera.position.clone();
     
@@ -217,16 +222,16 @@ export function Player() {
     
 
 
-    // Safe is at [-14, 1, 6]
-    const safePos = new THREE.Vector3(-14, 1, 6);
+    // Safe is at [-40, 1, 15] (Master Bedroom)
+    const safePos = new THREE.Vector3(-40, 1, 15);
     const distToSafe = camera.position.distanceTo(safePos);
 
     // Flashlight is at [3, 0.85, -3]
     const flashlightPos = new THREE.Vector3(3, 0.85, -3);
     const distToFlashlight = camera.position.distanceTo(flashlightPos);
 
-    // Vent is at [5, 0.5, 10]
-    const ventPos = new THREE.Vector3(5, 0.5, 10);
+    // Vent is at [-4.95, 0.5, 12] (Hallway Left)
+    const ventPos = new THREE.Vector3(-4.95, 0.5, 12);
     const distToVent = camera.position.distanceTo(ventPos);
 
     // Storage Door is at [25, 2, 25]
@@ -313,8 +318,13 @@ export function Player() {
     const batteryPos = new THREE.Vector3(25, 0.85, 7.5);
     const distToBattery = camera.position.distanceTo(batteryPos);
 
+    // Energy Drink is at [-13, 1.3, 13]
+    const energyDrinkPos = new THREE.Vector3(-13, 1.3, 13);
+    const distToEnergyDrink = camera.position.distanceTo(energyDrinkPos);
+
     const setInteractionText = useGameStore.getState().setInteractionText;
     const gameState = useGameStore.getState().gameState;
+    // const inventory = useGameStore.getState().inventory; // Moved to top of useFrame
     const doorCodeKnown = useGameStore.getState().doorCodeKnown;
     const safeOpen = useGameStore.getState().safeOpen;
     const ventOpen = useGameStore.getState().ventOpen;
@@ -326,7 +336,7 @@ export function Player() {
     const studyDoorOpen = useGameStore.getState().studyDoorOpen;
     const toolboxOpen = useGameStore.getState().toolboxOpen;
     const toolboxCodeKnown = useGameStore.getState().toolboxCodeKnown;
-    const inventory = useGameStore.getState().inventory;
+    // const inventory = useGameStore.getState().inventory; // Moved up
     const addToInventory = useGameStore.getState().addToInventory;
     const isHiding = useGameStore.getState().isHiding;
     const radioOn = useGameStore.getState().radioOn;
@@ -585,6 +595,16 @@ export function Player() {
         setInteractionText('Press E to take Battery');
         if (KEYS.e) {
             addToInventory('Battery');
+            KEYS.e = false;
+        }
+    } else if (distToEnergyDrink < 2 && !inventory.includes('Energy Drink')) {
+        setInteractionText('Press E to drink Energy Drink (Speed Boost)');
+        if (KEYS.e) {
+            addToInventory('Energy Drink');
+            // Apply speed boost? For now just inventory item.
+            // Maybe set a state for speed boost.
+            // Let's just say "You feel energized!"
+            setInteractionText('You feel energized! (Speed Boost)');
             KEYS.e = false;
         }
     } else {

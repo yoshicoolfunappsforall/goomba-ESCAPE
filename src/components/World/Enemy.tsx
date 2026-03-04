@@ -21,16 +21,15 @@ interface EnemyProps {
 export function Enemy({
   initialPosition = [0, 1, 20],
   patrolPoints = [
-    new THREE.Vector3(0, 1, 20),
-    new THREE.Vector3(-10, 1, 25),
-    new THREE.Vector3(5, 1, 25),
-    new THREE.Vector3(0, 1, 10),
-    new THREE.Vector3(20, 1, 20),
-    new THREE.Vector3(30, 1, 25),
-    new THREE.Vector3(-20, 1, 17.5),
-    new THREE.Vector3(-30, 1, 10),
-    new THREE.Vector3(45, 1, 15),
-    new THREE.Vector3(0, 1, 40),
+    new THREE.Vector3(0, 1, 20), // Hallway Center
+    new THREE.Vector3(-10, 1, 25), // Living Room Left
+    new THREE.Vector3(5, 1, 25), // Living Room Right
+    new THREE.Vector3(0, 1, 10), // Hallway Start
+    new THREE.Vector3(20, 1, 20), // Kitchen
+    new THREE.Vector3(20, 1, 10), // Dining Room (Door at 20, 15)
+    new THREE.Vector3(-20, 1, 10), // Study (Door at -20, 15)
+    new THREE.Vector3(-30, 1, 10), // Master Bedroom (Door at -25.5, 17.5)
+    new THREE.Vector3(10, 1, 10), // Guest Room (Door at 5, 9.5)
   ],
   speed = 3.5,
   runSpeed = 6.0,
@@ -54,6 +53,8 @@ export function Enemy({
   texture.magFilter = THREE.NearestFilter;
   texture.minFilter = THREE.NearestFilter;
   
+  type EnemyState = 'patrol' | 'chase' | 'search' | 'investigate';
+
   // AI State
   const [aiState, setAiState] = useState<EnemyState>('patrol');
   const [targetPos, setTargetPos] = useState<THREE.Vector3 | null>(null);
@@ -107,6 +108,25 @@ export function Enemy({
       return nextIndex;
   };
 
+  // Door Opening Logic
+  const checkDoors = (pos: THREE.Vector3) => {
+      const state = useGameStore.getState();
+      const doors = [
+          { pos: new THREE.Vector3(1, 2, 5), open: state.bedroomDoorOpen, set: state.setBedroomDoorOpen },
+          { pos: new THREE.Vector3(-5, 2, 10), open: state.bathroomDoorOpen, set: state.setBathroomDoorOpen },
+          { pos: new THREE.Vector3(-25.5, 2, 17.5), open: state.masterBedroomDoorOpen, set: state.setMasterBedroomDoorOpen },
+          { pos: new THREE.Vector3(5, 2, 9.5), open: state.guestDoorOpen, set: state.setGuestDoorOpen },
+          { pos: new THREE.Vector3(20, 2, 15), open: state.diningDoorOpen, set: state.setDiningDoorOpen },
+          { pos: new THREE.Vector3(-20, 2, 15), open: state.studyDoorOpen, set: state.setStudyDoorOpen },
+      ];
+
+      for (const door of doors) {
+          if (!door.open && pos.distanceTo(door.pos) < 2.5) {
+              door.set(true); // Enemy opens door
+          }
+      }
+  };
+
   // Reset enemy when game starts
   useEffect(() => {
     const unsub = useGameStore.subscribe((state, prevState) => {
@@ -141,8 +161,9 @@ export function Enemy({
       
       // Adjust collision height check based on enemy scale/position
       // Enemy center is at Y, height is roughly 2*scale
-      const enemyBottom = newPos.y - 1 * scale;
-      const enemyTop = newPos.y + 1 * scale;
+      // Raise the bottom check slightly to avoid floor collision if floor is at y=0
+      const enemyBottom = newPos.y - 0.9 * scale; 
+      const enemyTop = newPos.y + 0.9 * scale;
 
       if (maxY < enemyBottom || minY > enemyTop) continue;
 
@@ -159,6 +180,9 @@ export function Enemy({
 
     // Check Furniture
     for (const item of FURNITURE) {
+      // Ignore non-collidable items (Floor rugs, etc)
+      if (['Rug', 'LivingRug', 'Path', 'UnderBed', 'UnderMasterBed', 'Poster', 'CeilingLight', 'Plant', 'Lamp', 'Book', 'ToiletPaper'].includes(item.name)) continue;
+
       const pos = new THREE.Vector3(...item.position);
       const size = new THREE.Vector3(...item.size);
       
@@ -166,8 +190,8 @@ export function Enemy({
       const minY = pos.y - size.y / 2;
       const maxY = pos.y + size.y / 2;
       
-      const enemyBottom = newPos.y - 1 * scale;
-      const enemyTop = newPos.y + 1 * scale;
+      const enemyBottom = newPos.y - 0.9 * scale;
+      const enemyTop = newPos.y + 0.9 * scale;
       
       if (maxY < enemyBottom || minY > enemyTop) continue;
 
@@ -246,6 +270,8 @@ export function Enemy({
     
     // Check if stuck (only if moving)
     if (aiState === 'patrol' || aiState === 'chase' || aiState === 'search' || aiState === 'investigate') {
+        checkDoors(enemyPos); // Check for doors to open
+
         if (enemyPos.distanceTo(lastPos.current) < 0.01 * delta * 60) { // Very small movement
             stuckTimer.current += delta;
             if (stuckTimer.current > 1.0) {

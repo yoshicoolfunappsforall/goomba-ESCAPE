@@ -29,7 +29,16 @@ export const WALLS: Wall[] = [
   // Left Wall (Shared with Bathroom)
   { position: [-5 - T/2, H/2, 7], size: [4, H, T], rotation: [0, Math.PI / 2, 0] },
   { position: [-5 - T/2, 5, 10], size: [2, 2, T], rotation: [0, Math.PI / 2, 0] },
-  { position: [-5 - T/2, H/2, 13], size: [4, H, T], rotation: [0, Math.PI / 2, 0] },
+  // Vent Hole at z=12?
+  // Wall is z=11 to 15.
+  // Let's make a hole at z=12.
+  // Wall 1: z=11 to 11.5
+  // Hole: z=11.5 to 12.5
+  // Wall 2: z=12.5 to 15
+  { position: [-5 - T/2, H/2, 11.25], size: [0.5, H, T], rotation: [0, Math.PI / 2, 0] }, // z=11 to 11.5
+  { position: [-5 - T/2, 5, 12], size: [1, 2, T], rotation: [0, Math.PI / 2, 0] }, // Vent Header z=11.5 to 12.5
+  { position: [-5 - T/2, 0.25, 12], size: [1, 0.5, T], rotation: [0, Math.PI / 2, 0] }, // Vent Bottom z=11.5 to 12.5
+  { position: [-5 - T/2, H/2, 13.75], size: [2.5, H, T], rotation: [0, Math.PI / 2, 0] }, // z=12.5 to 15
 
   // --- BATHROOM ---
   { position: [-10, H/2, 5 - T/2], size: [10 + T, H, T] },
@@ -187,14 +196,13 @@ export const FURNITURE = [
   { position: [34, 1.5, 25], size: [1, 3, 6], color: '#607D8B', name: 'MetalShelf' },
   { position: [34, 3.1, 25], size: [0.8, 0.4, 0.4], color: '#D32F2F', name: 'Toolbox' }, 
 
-  // Safe (Hidden in Bathroom?)
-  { position: [-14, 1, 6], size: [1.5, 1.5, 1.5], color: '#333', name: 'Safe' },
-
   // Master Bedroom
   { position: [-35, 0.5, 10], size: [4, 1, 6], color: '#3E2723', name: 'MasterBed' },
   { position: [-40, 1.5, 5], size: [1, 3, 2], color: '#5D4037', name: 'Wardrobe' },
   { position: [-30, 0.5, 18], size: [2, 1, 1], color: '#5D4037', name: 'Nightstand' },
   { position: [-35, 3.8, 10], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' }, // Master Bedroom Light
+  // Safe (Moved to Master Bedroom)
+  { position: [-40, 1, 15], size: [1.5, 1.5, 1.5], color: '#333', name: 'Safe' },
 
   // Garage
   { position: [45, 1, 15], size: [4, 2, 6], color: '#ef5350', name: 'Car' },
@@ -247,9 +255,9 @@ export const FURNITURE = [
 ];
 
 export const ITEMS = [
-    { position: [-14, 1, 6], name: 'Storage Key', type: 'key' }, // Inside Safe
+    { position: [-40, 1, 15], name: 'Storage Key', type: 'key' }, // Inside Safe (Master Bedroom)
     { position: [3, 0.85, -3], name: 'Flashlight', type: 'tool' }, // On Desk
-    { position: [4.5, 0.5, 10], name: 'House Key', type: 'key' }, // Inside Vent
+    { position: [-4.5, 0.5, 12], name: 'House Key', type: 'key' }, // Inside Vent (Hallway Left)
     { position: [34, 3.2, 25], name: 'Screwdriver', type: 'tool' }, // Inside Toolbox (y adjusted)
     { position: [30, 2, 40], name: 'Gate Key', type: 'key' }, // In Shed
     
@@ -257,4 +265,5 @@ export const ITEMS = [
     { position: [13, 1.1, 2], name: 'Study Key', type: 'key' }, // On Guest Room Nightstand
     { position: [-20, 0.85, 5], name: 'Safe Code', type: 'paper' }, // On Study Desk
     { position: [25, 0.85, 7.5], name: 'Battery', type: 'item' }, // On Dining Table
+    { position: [-13, 1.3, 13], name: 'Energy Drink', type: 'consumable' }, // On Bathroom Sink
 ];

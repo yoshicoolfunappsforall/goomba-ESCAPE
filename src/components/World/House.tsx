@@ -474,12 +474,24 @@ export function House() {
               )
           }
 
+          if (item.name === 'Energy Drink') {
+              return (
+                  <group key={`item-${index}`} position={new THREE.Vector3(...item.position)}>
+                      <mesh castShadow position={[0, 0.1, 0]}>
+                          <cylinderGeometry args={[0.05, 0.05, 0.2]} />
+                          <meshStandardMaterial color="blue" emissive="cyan" emissiveIntensity={0.5} />
+                      </mesh>
+                      <pointLight intensity={0.5} color="cyan" distance={1} />
+                  </group>
+              )
+          }
+
           return null;
       })}
       
       {/* Vent Grate */}
       {!ventOpen && (
-        <group position={[4.95, 0.5, 10]} rotation={[0, -Math.PI/2, 0]}>
+        <group position={[-4.95, 0.5, 12]} rotation={[0, Math.PI/2, 0]}>
             <mesh castShadow receiveShadow>
                 <boxGeometry args={[1, 1, 0.05]} />
                 <meshStandardMaterial color="#555" metalness={0.5} roughness={0.7} />
