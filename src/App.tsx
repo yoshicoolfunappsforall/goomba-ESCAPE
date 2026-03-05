@@ -1,4 +1,5 @@
 import { StrictMode, useEffect, Suspense, useState } from 'react';
+import * as THREE from 'three';
 import { useGameStore } from './store/gameStore';
 import Laptop from './components/Laptop/Laptop';
 import { SafeKeypad } from './components/UI/SafeKeypad';
@@ -10,6 +11,8 @@ import { House } from './components/World/House';
 import { Player } from './components/World/Player';
 import { Enemy } from './components/World/Enemy';
 import { Controls } from './components/World/Controls';
+
+import { GoomOS } from './components/UI/GoomOS';
 
 function HUD() {
   const interactionText = useGameStore((state) => state.interactionText);
@@ -53,6 +56,8 @@ function Menu() {
   const setGameState = useGameStore((state) => state.setGameState);
   const difficulty = useGameStore((state) => state.difficulty);
   const setDifficulty = useGameStore((state) => state.setDifficulty);
+  const challengeMode = useGameStore((state) => state.challengeMode);
+  const setChallengeMode = useGameStore((state) => state.setChallengeMode);
   const [showSettings, setShowSettings] = useState(false);
   const sensitivity = useGameStore((state) => state.sensitivity);
   const setSensitivity = useGameStore((state) => state.setSensitivity);
@@ -135,6 +140,20 @@ function Menu() {
                 {difficulty === 'medium' && "Standard challenge. Stay quiet!"}
                 {difficulty === 'hard' && "Enemy is fast, smart, and hears everything."}
             </p>
+        </div>
+
+        {/* Challenge Mode Toggle */}
+        <div className="mb-6 flex items-center justify-center gap-3">
+            <input 
+                type="checkbox" 
+                id="challengeMode" 
+                checked={challengeMode} 
+                onChange={(e) => setChallengeMode(e.target.checked)}
+                className="w-5 h-5 accent-red-600 cursor-pointer"
+            />
+            <label htmlFor="challengeMode" className="text-gray-300 font-bold cursor-pointer select-none">
+                CHALLENGE MODE (2x Enemies)
+            </label>
         </div>
         
         <div className="space-y-3">
@@ -219,6 +238,7 @@ export default function App() {
   const setGameState = useGameStore((state) => state.setGameState);
   const safeKeypadOpen = useGameStore((state) => state.safeKeypadOpen);
   const toolboxKeypadOpen = useGameStore((state) => state.toolboxKeypadOpen);
+  const challengeMode = useGameStore((state) => state.challengeMode);
   const [dpr, setDpr] = useState(1.5);
   const [lowPerformance, setLowPerformance] = useState(false);
 
@@ -247,7 +267,69 @@ export default function App() {
 
             <Suspense fallback={null}>
               <House />
+              {/* Main Enemy (1st Floor) */}
               <Enemy />
+              {/* Challenge Mode: Extra Enemy (1st Floor) */}
+              {challengeMode && (
+                  <Enemy 
+                    name="MOM GOOMBA"
+                    initialPosition={[2, 1, 20]} // Next to Dad ([0, 1, 20])
+                    patrolPoints={[
+                        new THREE.Vector3(2, 1, 20), // Start
+                        new THREE.Vector3(20, 1.6, 20), // Kitchen
+                        new THREE.Vector3(25, 1.6, 7.5), // Dining
+                        new THREE.Vector3(-10, 1.6, 25), // Living Room
+                        new THREE.Vector3(-20, 1.6, 5), // Study
+                    ]}
+                    scale={1.2}
+                    speed={2.5}
+                    runSpeed={4.5}
+                    viewDistance={12}
+                    fov={0.6}
+                    catchDistance={1.5}
+                  />
+              )}
+
+              {/* Kid Goomba (2nd Floor) */}
+              <Enemy 
+                name="KID GOOMBA"
+                initialPosition={[0, 21, 10]} // 2nd Floor Hallway
+                patrolPoints={[
+                    new THREE.Vector3(0, 21, 10), // Hallway Center
+                    new THREE.Vector3(0, 21, -5), // Hallway Back
+                    new THREE.Vector3(0, 21, 25), // Hallway Front
+                    new THREE.Vector3(-15, 21, 10), // Kid Room Center
+                    new THREE.Vector3(-20, 21, 5), // Kid Room Bed
+                    new THREE.Vector3(15, 21, 10), // Game Room Center
+                    new THREE.Vector3(20, 21, 5), // Game Room Pool Table
+                ]}
+                scale={0.5}
+                speed={5.0} // Faster
+                runSpeed={8.0} // Much Faster
+                viewDistance={15} // Bad Vision
+                fov={0.4} // Narrower FOV
+                catchDistance={1.0}
+              />
+              {/* Challenge Mode: Extra Enemy (2nd Floor) */}
+              {challengeMode && (
+                  <Enemy 
+                    name="UNCLE GOOMBA"
+                    initialPosition={[2, 21, 10]} // Next to Kid ([0, 21, 10])
+                    patrolPoints={[
+                        new THREE.Vector3(2, 21, 10), // Start
+                        new THREE.Vector3(0, 21, -25), // Computer Room
+                        new THREE.Vector3(0, 21, -5), // Hallway Back
+                        new THREE.Vector3(-15, 21, -10), // Library
+                        new THREE.Vector3(23, 21, -5), // Upper Bath
+                    ]}
+                    scale={1.0}
+                    speed={3.5}
+                    runSpeed={6.0}
+                    viewDistance={10}
+                    fov={0.5}
+                    catchDistance={1.2}
+                  />
+              )}
             </Suspense>
 
             {gameState === 'playing' && !lowPerformance && (
@@ -273,6 +355,7 @@ export default function App() {
       {gameState === 'laptop' && safeKeypadOpen && <SafeKeypad />}
       {gameState === 'laptop' && toolboxKeypadOpen && <ToolboxKeypad />}
       {gameState === 'laptop' && !safeKeypadOpen && !toolboxKeypadOpen && <Laptop />}
+      {gameState === 'goomos' && <GoomOS />}
       {gameState === 'caught' && <CaughtScreen />}
       {gameState === 'won' && <WinScreen />}
       <Loader />

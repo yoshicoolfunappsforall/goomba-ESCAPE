@@ -279,12 +279,120 @@ export const FURNITURE = [
   { position: [10, 0.75, 45], size: [2.5, 1.5, 2.5], color: '#2E7D32', name: 'BigBush' }, // Hiding Spot
 ];
 
+// --- 2ND FLOOR DATA (Y=20) ---
+const H2 = 6.0;
+const T2 = 1.0;
+const Y2 = 20 + H2/2; // Center Y of walls
+
+export const WALLS_2ND_FLOOR: Wall[] = []; // Unused, we use FINAL below
+
+export const WALLS_2ND_FLOOR_FINAL: Wall[] = [
+    // --- COMPUTER ROOM (End of Hallway) ---
+    // x = -5 to 5, z = -30 to -20
+    { position: [0, Y2, -30 - T2/2], size: [10 + 2*T2, H2, T2] }, // Back Wall
+    { position: [-5 - T2/2, Y2, -25], size: [10, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Left Wall
+    { position: [5 + T2/2, Y2, -25], size: [10, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Right Wall
+    // Front is open to Hallway at z=-20
+
+    // --- HALLWAY ---
+    // x = -5 to 5, z = -20 to 30 (Extended back to -20)
+    // { position: [0, Y2, -20 - T2/2], size: [10 + 2*T2, H2, T2] }, // Back End (z=-20) REMOVED to open to Computer Room
+    { position: [0, Y2, 30 + T2/2], size: [10 + 2*T2, H2, T2] }, // Front End (z=30)
+
+    // Left Hallway Wall (x=-5)
+    // Segments:
+    // 1. z=-20 to -10 (Library Door?) -> Let's say Door at z=-15
+    // 2. z=-10 to 8 (Kid Room Wall)
+    // 3. z=8 to 12 (Kid Room Door)
+    // 4. z=12 to 30 (Front)
+    
+    // Let's simplify: Open Archways for new rooms too.
+    // Left Wall:
+    { position: [-5 - T2/2, Y2, -17.5], size: [5, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=-20 to -15
+    { position: [-5 - T2/2, 20 + 5, -12.5], size: [5, 2, T2], rotation: [0, Math.PI / 2, 0] }, // Header Library Door (z=-15 to -10)
+    { position: [-5 - T2/2, Y2, -1], size: [18, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=-10 to 8
+    { position: [-5 - T2/2, 20 + 5, 10], size: [4, 2, T2], rotation: [0, Math.PI / 2, 0] }, // Header Kid Door (z=8 to 12)
+    { position: [-5 - T2/2, Y2, 21], size: [18, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=12 to 30
+
+    // Right Hallway Wall (x=5)
+    // Segments similar to Left
+    { position: [5 + T2/2, Y2, -17.5], size: [5, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=-20 to -15
+    { position: [5 + T2/2, 20 + 5, -12.5], size: [5, 2, T2], rotation: [0, Math.PI / 2, 0] }, // Header Bath Door (z=-15 to -10)
+    { position: [5 + T2/2, Y2, -1], size: [18, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=-10 to 8
+    { position: [5 + T2/2, 20 + 5, 10], size: [4, 2, T2], rotation: [0, Math.PI / 2, 0] }, // Header Game Door (z=8 to 12)
+    { position: [5 + T2/2, Y2, 21], size: [18, H2, T2], rotation: [0, Math.PI / 2, 0] }, // z=12 to 30
+
+    // --- KID ROOM (Left Front) ---
+    // x = -25 to -5, z = 0 to 20
+    { position: [-15, Y2, 0 - T2/2], size: [20, H2, T2] }, // Back (Shared with Library Front?) No, Library is -20 to 0.
+    // Wait, Library is z=-20 to -10? Or -20 to 0?
+    // Let's make Library z=-20 to 0.
+    // So Kid Room Back Wall at z=0 is shared with Library Front Wall.
+    // We only need one wall there.
+    { position: [-15, Y2, 0], size: [20, H2, T2] }, // Divider Wall (Kid/Library)
+    { position: [-25 - T2/2, Y2, 10], size: [20, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Left
+    { position: [-15, Y2, 20 + T2/2], size: [20, H2, T2] }, // Front
+
+    // --- GAME ROOM (Right Front) ---
+    // x = 5 to 25, z = 0 to 20
+    { position: [15, Y2, 0], size: [20, H2, T2] }, // Divider Wall (Game/Bath)
+    { position: [25 + T2/2, Y2, 10], size: [20, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Right
+    { position: [15, Y2, 20 + T2/2], size: [20, H2, T2] }, // Front
+
+    // --- LIBRARY (Left Back) ---
+    // x = -25 to -5, z = -20 to 0
+    { position: [-15, Y2, -20 - T2/2], size: [20, H2, T2] }, // Back
+    { position: [-25 - T2/2, Y2, -10], size: [20, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Left
+    // Front is Divider Wall at z=0 (Already defined)
+    // Right is Hallway Left Wall (Already defined)
+
+    // --- UPPER BATH (Right Back) ---
+    // x = 5 to 25, z = -20 to 0
+    { position: [15, Y2, -20 - T2/2], size: [20, H2, T2] }, // Back
+    { position: [25 + T2/2, Y2, -10], size: [20, H2, T2], rotation: [0, Math.PI / 2, 0] }, // Right
+    // Front is Divider Wall at z=0 (Already defined)
+    // Left is Hallway Right Wall (Already defined)
+];
+
+export const FURNITURE_2ND_FLOOR = [
+    // Kid Room
+    { position: [-20, 20.5, 5], size: [4, 1, 6], color: '#1E88E5', name: 'KidBed' },
+    { position: [-10, 20.5, 5], size: [3, 1, 3], color: '#FFEB3B', name: 'ToyBox' },
+    { position: [-20, 20.1, 15], size: [6, 0.1, 6], color: '#FF5722', name: 'PlayRug' },
+    { position: [-15, 20.5, 18], size: [2, 1, 2], color: '#8D6E63', name: 'SmallTable' },
+    
+    // Game Room
+    { position: [20, 20.5, 5], size: [6, 1, 3], color: '#4CAF50', name: 'PoolTable' },
+    { position: [10, 20.5, 15], size: [3, 2, 1], color: '#212121', name: 'ArcadeMachine' },
+    { position: [15, 20.5, 15], size: [3, 2, 1], color: '#212121', name: 'ArcadeMachine' },
+    { position: [20, 20.5, 18], size: [4, 1, 2], color: '#3E2723', name: 'Couch' },
+    
+    // Library
+    { position: [-24, 20.5, -10], size: [1, 5, 10], color: '#5D4037', name: 'Bookshelf' },
+    { position: [-15, 20.5, -10], size: [4, 1, 4], color: '#5D4037', name: 'LibraryTable' },
+    { position: [-15, 20.1, -10], size: [6, 0.1, 6], color: '#3E2723', name: 'Rug' },
+    { position: [-24, 21.5, -10], size: [1.2, 1.2, 1.2], color: '#333', name: 'LibrarySafe' }, // New Safe
+
+    // Upper Bath
+    { position: [23, 20.5, -15], size: [2, 1, 3], color: '#FFFFFF', name: 'Bathtub' },
+    { position: [23, 20.5, -5], size: [1, 1, 1], color: '#FFFFFF', name: 'Toilet' },
+    { position: [10, 20.5, -10], size: [1, 2, 2], color: '#BDBDBD', name: 'Mirror' },
+
+    // Hallway
+    { position: [0, 20.1, 0], size: [4, 0.1, 4], color: '#00BCD4', name: 'TeleportPad2' }, // Visual only
+
+    // Computer Room
+    { position: [0, 20.5, -28], size: [6, 1, 3], color: '#333', name: 'ComputerDesk' },
+    { position: [0, 21.5, -28], size: [2, 1.5, 0.1], color: '#000', name: 'GoomOSComputer' }, // Screen
+    { position: [0, 20.5, -26], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+];
+
 export const ITEMS = [
     { position: [-40, 1, 15], name: 'Storage Key', type: 'key' }, // Inside Safe (Master Bedroom)
-    { position: [32, 0.5, 25], name: 'Flashlight', type: 'tool' }, // Floor of Storage Room
+    { position: [-53, 1, 8], name: 'Flashlight', type: 'tool' }, // Moved to Cabinet (Master Bath)
     { position: [-4.5, 0.5, 12], name: 'House Key', type: 'key' }, // Inside Vent (Hallway Left)
-    { position: [-53, 1, 8], name: 'Screwdriver', type: 'tool' }, // Moved to Master Bathroom (Inside Locked Cabinet)
-    { position: [30, 2, 40], name: 'Gate Key', type: 'key' }, // In Shed
+    // Screwdriver removed from floor (now in Toolbox)
+    // Gate Key removed from Shed (now in Library Safe)
     
     // New Items
     { position: [13, 1.1, 2], name: 'Study Key', type: 'key' }, // On Guest Room Nightstand
@@ -293,5 +401,10 @@ export const ITEMS = [
     { position: [-13, 1.3, 13], name: 'Energy Drink', type: 'consumable' }, // On Bathroom Sink
     { position: [-20, 0.85, 5.5], name: 'Shed Key', type: 'key' }, // Moved to Study Desk
     { position: [-24, 0.85, 18], name: 'Secret Note', type: 'paper' }, // Inside Study Room
-    { position: [0, 0.15, 25], name: 'Cabinet Key', type: 'key' }, // Under Living Room Rug
+    
+    // 2nd Floor Items
+    { position: [-10, 21, 5], name: 'Cabinet Key', type: 'key' }, // Moved to Kid Room (On ToyBox)
+    { position: [-15, 21, 18], name: 'Toy Car', type: 'item' }, // Kid Room Table
+    { position: [23, 21, -5], name: 'Arcade Coin', type: 'item' }, // Upper Bath Toilet
+    { position: [30, 2, 40], name: 'Crowbar', type: 'tool' }, // In Shed (Replaces Gate Key)
 ];

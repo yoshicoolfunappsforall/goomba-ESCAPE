@@ -1,6 +1,6 @@
 import * as THREE from 'three';
 import { Grid, Text } from '@react-three/drei';
-import { WALLS, FURNITURE, ITEMS } from '../../data/level';
+import { WALLS, FURNITURE, ITEMS, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
 import { useGameStore } from '../../store/gameStore';
 
 export function House() {
@@ -42,13 +42,51 @@ export function House() {
         <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
       </mesh>
 
-      {/* Ceiling */}
+      {/* 2ND FLOOR FLOOR (Y=20) */}
+      {/* Kid Room (-25 to -5, 0 to 20) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-15, 20.02, 10]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#90CAF9" roughness={0.8} /> {/* Light Blue Floor */}
+      </mesh>
+      {/* Game Room (5 to 25, 0 to 20) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15, 20.02, 10]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#A5D6A7" roughness={0.8} /> {/* Light Green Floor */}
+      </mesh>
+      {/* Library (-25 to -5, -20 to 0) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-15, 20.02, -10]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#8D6E63" roughness={0.8} /> {/* Brown Floor */}
+      </mesh>
+      {/* Upper Bath (5 to 25, -20 to 0) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[15, 20.02, -10]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#E0E0E0" roughness={0.5} /> {/* Tile Floor */}
+      </mesh>
+      {/* Hallway (-5 to 5, -20 to 30) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 20.02, 5]} receiveShadow>
+        <planeGeometry args={[10, 50]} />
+        <meshStandardMaterial color="#EEEEEE" roughness={0.8} /> {/* White Floor */}
+      </mesh>
+      {/* Computer Room (-5 to 5, -30 to -20) */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 20.02, -25]} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="#607D8B" roughness={0.8} /> {/* Blue-Grey Floor */}
+      </mesh>
+
+      {/* Ceiling 1st Floor */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4, 0]}>
         <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color="#f8fafc" />
       </mesh>
 
-      {/* Walls */}
+      {/* Ceiling 2nd Floor */}
+      <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 24, 0]}>
+        <planeGeometry args={[200, 200]} />
+        <meshStandardMaterial color="#f8fafc" />
+      </mesh>
+
+      {/* Walls 1st Floor */}
       {WALLS.map((wall, index) => (
         <mesh
           key={`wall-${index}`}
@@ -62,8 +100,53 @@ export function House() {
         </mesh>
       ))}
 
+      {/* Walls 2nd Floor */}
+      {WALLS_2ND_FLOOR_FINAL.map((wall, index) => (
+        <mesh
+          key={`wall2-${index}`}
+          position={new THREE.Vector3(...wall.position)}
+          rotation={new THREE.Euler(...(wall.rotation || [0, 0, 0]))}
+          receiveShadow
+          castShadow
+        >
+          <boxGeometry args={[wall.size[0], wall.size[1], wall.size[2]]} />
+          <meshStandardMaterial color="#BBDEFB" roughness={0.9} /> {/* Slightly blue walls */}
+        </mesh>
+      ))}
+
+      {/* Teleport Pads */}
+      {/* 1st Floor Pad */}
+      <group position={[0, 0.1, 18]}>
+          <mesh receiveShadow>
+              <cylinderGeometry args={[1, 1, 0.1, 32]} />
+              <meshStandardMaterial color="#00BCD4" emissive="#00BCD4" emissiveIntensity={0.5} />
+          </mesh>
+          <pointLight color="#00BCD4" distance={3} intensity={1} position={[0, 1, 0]} />
+          <Text position={[0, 1.5, 0]} fontSize={0.3} color="#00BCD4" anchorX="center" anchorY="middle" rotation={[0, Math.PI, 0]}>
+              To 2nd Floor
+          </Text>
+          <Text position={[0, 1.5, 0]} fontSize={0.3} color="#00BCD4" anchorX="center" anchorY="middle" rotation={[0, 0, 0]}>
+              To 2nd Floor
+          </Text>
+      </group>
+
+      {/* 2nd Floor Pad */}
+      <group position={[0, 20.1, 0]}>
+          <mesh receiveShadow>
+              <cylinderGeometry args={[1, 1, 0.1, 32]} />
+              <meshStandardMaterial color="#00BCD4" emissive="#00BCD4" emissiveIntensity={0.5} />
+          </mesh>
+          <pointLight color="#00BCD4" distance={3} intensity={1} position={[0, 1, 0]} />
+          <Text position={[0, 1.5, 0]} fontSize={0.3} color="#00BCD4" anchorX="center" anchorY="middle" rotation={[0, Math.PI, 0]}>
+              To 1st Floor
+          </Text>
+          <Text position={[0, 1.5, 0]} fontSize={0.3} color="#00BCD4" anchorX="center" anchorY="middle" rotation={[0, 0, 0]}>
+              To 1st Floor
+          </Text>
+      </group>
+
       {/* Furniture */}
-      {FURNITURE.map((item, index) => {
+      {[...FURNITURE, ...FURNITURE_2ND_FLOOR].map((item, index) => {
         if (item.name === 'Desk') {
             return (
                 <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>

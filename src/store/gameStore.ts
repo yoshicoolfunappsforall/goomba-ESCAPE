@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface GameState {
-  gameState: 'menu' | 'playing' | 'laptop' | 'caught' | 'won';
-  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'caught' | 'won') => void;
+  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won';
+  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won') => void;
   hasKey: boolean;
   setHasKey: (hasKey: boolean) => void;
   doorCodeKnown: boolean;
@@ -39,6 +39,10 @@ interface GameState {
   setToolboxCodeKnown: (known: boolean) => void;
   cabinetOpen: boolean;
   setCabinetOpen: (open: boolean) => void;
+  librarySafeOpen: boolean;
+  setLibrarySafeOpen: (open: boolean) => void;
+  arcadeScoreKnown: boolean;
+  setArcadeScoreKnown: (known: boolean) => void;
   gateKey: boolean;
   setGateKey: (has: boolean) => void;
   
@@ -58,6 +62,8 @@ interface GameState {
   setRadioOn: (on: boolean) => void;
   difficulty: 'easy' | 'medium' | 'hard';
   setDifficulty: (diff: 'easy' | 'medium' | 'hard') => void;
+  challengeMode: boolean;
+  setChallengeMode: (enabled: boolean) => void;
   inventory: string[];
   addToInventory: (item: string) => void;
   interactionText: string | null;
@@ -104,6 +110,10 @@ export const useGameStore = create<GameState>((set) => ({
   setToolboxCodeKnown: (known) => set({ toolboxCodeKnown: known }),
   cabinetOpen: false,
   setCabinetOpen: (open) => set({ cabinetOpen: open }),
+  librarySafeOpen: false,
+  setLibrarySafeOpen: (open) => set({ librarySafeOpen: open }),
+  arcadeScoreKnown: false,
+  setArcadeScoreKnown: (known) => set({ arcadeScoreKnown: known }),
   gateKey: false,
   setGateKey: (has) => set({ gateKey: has }),
   
@@ -122,6 +132,8 @@ export const useGameStore = create<GameState>((set) => ({
   setRadioOn: (on) => set({ radioOn: on }),
   difficulty: 'medium',
   setDifficulty: (diff) => set({ difficulty: diff }),
+  challengeMode: false,
+  setChallengeMode: (enabled) => set({ challengeMode: enabled }),
   inventory: [],
   addToInventory: (item) => set((state) => ({ inventory: [...state.inventory, item] })),
   interactionText: null,
@@ -146,6 +158,8 @@ export const useGameStore = create<GameState>((set) => ({
     toolboxKeypadOpen: false,
     toolboxCodeKnown: false,
     cabinetOpen: false,
+    librarySafeOpen: false,
+    arcadeScoreKnown: false,
     gateKey: false,
     isHiding: false,
     noiseLevel: 0,

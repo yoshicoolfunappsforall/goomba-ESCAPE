@@ -3,7 +3,7 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Billboard, Text, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
-import { WALLS, FURNITURE } from '../../data/level';
+import { WALLS, FURNITURE, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
 
 interface EnemyProps {
   initialPosition?: [number, number, number];
@@ -212,7 +212,8 @@ export function Enemy({
 
   const checkCollision = (newPos: THREE.Vector3) => {
     // Check Walls
-    for (const wall of WALLS) {
+    const allWalls = [...WALLS, ...WALLS_2ND_FLOOR_FINAL];
+    for (const wall of allWalls) {
       const wallPos = new THREE.Vector3(...wall.position);
       const wallSize = new THREE.Vector3(...wall.size);
       const rotation = wall.rotation ? wall.rotation[1] : 0;
@@ -249,9 +250,10 @@ export function Enemy({
     }
 
     // Check Furniture
-    for (const item of FURNITURE) {
+    const allFurniture = [...FURNITURE, ...FURNITURE_2ND_FLOOR];
+    for (const item of allFurniture) {
       // Ignore non-collidable items (Floor rugs, etc)
-      if (['Rug', 'LivingRug', 'Path', 'UnderBed', 'UnderMasterBed', 'Poster', 'CeilingLight', 'Plant', 'Lamp', 'Book', 'ToiletPaper'].includes(item.name)) continue;
+      if (['Rug', 'LivingRug', 'Path', 'UnderBed', 'UnderMasterBed', 'Poster', 'CeilingLight', 'Plant', 'Lamp', 'Book', 'ToiletPaper', 'PlayRug', 'TeleportPad2'].includes(item.name)) continue;
 
       const pos = new THREE.Vector3(...item.position);
       const size = new THREE.Vector3(...item.size);
