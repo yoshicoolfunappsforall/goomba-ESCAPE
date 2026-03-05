@@ -16,6 +16,10 @@ export function Player() {
   const lastValidPosition = useRef(new THREE.Vector3(0, 1.6, 0));
 
   useEffect(() => {
+    // Reset camera position on mount
+    camera.position.set(0, 1.6, 0);
+    camera.rotation.set(0, 0, 0);
+
     // Reset keys on mount
     KEYS.w = false;
     KEYS.a = false;
@@ -153,14 +157,20 @@ export function Player() {
     // Clamp delta to prevent huge jumps on lag (max 0.1s)
     const dt = Math.min(delta, 0.1);
     const inventory = useGameStore.getState().inventory;
+    const isHiding = useGameStore.getState().isHiding;
 
     // Movement Logic
-    direction.z = Number(KEYS.s) - Number(KEYS.w);
-    direction.x = Number(KEYS.a) - Number(KEYS.d);
-    direction.normalize();
+    if (!isHiding) {
+        direction.z = Number(KEYS.s) - Number(KEYS.w);
+        direction.x = Number(KEYS.a) - Number(KEYS.d);
+        direction.normalize();
 
-    if (KEYS.w || KEYS.s) velocity.z -= direction.z * 60.0 * dt;
-    if (KEYS.a || KEYS.d) velocity.x -= direction.x * 60.0 * dt;
+        if (KEYS.w || KEYS.s) velocity.z -= direction.z * 60.0 * dt;
+        if (KEYS.a || KEYS.d) velocity.x -= direction.x * 60.0 * dt;
+    } else {
+        // Stop movement if hiding
+        velocity.set(0, 0, 0);
+    }
 
     // Friction
     velocity.x -= velocity.x * 10.0 * dt;
@@ -226,8 +236,8 @@ export function Player() {
     const safePos = new THREE.Vector3(-40, 1, 15);
     const distToSafe = camera.position.distanceTo(safePos);
 
-    // Flashlight is at [3, 0.85, -3]
-    const flashlightPos = new THREE.Vector3(3, 0.85, -3);
+    // Flashlight is at [32, 0.5, 25] (Storage Room Floor)
+    const flashlightPos = new THREE.Vector3(32, 0.5, 25);
     const distToFlashlight = camera.position.distanceTo(flashlightPos);
 
     // Vent is at [-4.95, 0.5, 12] (Hallway Left)
@@ -238,8 +248,8 @@ export function Player() {
     const storageDoorPos = new THREE.Vector3(25, 2, 25);
     const distToStorageDoor = camera.position.distanceTo(storageDoorPos);
 
-    // Screwdriver is at [34, 3.2, 25] (inside toolbox)
-    const screwdriverPos = new THREE.Vector3(34, 3.2, 25);
+    // Screwdriver is at [-53, 1, 8] (Master Bath Cabinet)
+    const screwdriverPos = new THREE.Vector3(-53, 1, 8);
     const distToScrewdriver = camera.position.distanceTo(screwdriverPos);
 
     // Toolbox is at [34, 3.1, 25]
@@ -286,6 +296,18 @@ export function Player() {
     const shedPos = new THREE.Vector3(30, 1.5, 40);
     const distToShed = camera.position.distanceTo(shedPos);
 
+    // Dog House is at [-20, 0.75, 45]
+    const dogHousePos = new THREE.Vector3(-20, 0.75, 45);
+    const distToDogHouse = camera.position.distanceTo(dogHousePos);
+
+    // Big Bush is at [10, 0.75, 45]
+    const bigBushPos = new THREE.Vector3(10, 0.75, 45);
+    const distToBigBush = camera.position.distanceTo(bigBushPos);
+
+    // Secret Note is at [-24, 0.85, 18]
+    const secretNotePos = new THREE.Vector3(-24, 0.85, 18);
+    const distToSecretNote = camera.position.distanceTo(secretNotePos);
+
     // Under Master Bed is at [-35, 0.2, 10]
     const underMasterBedPos = new THREE.Vector3(-35, 0.2, 10);
     const distToUnderMasterBed = camera.position.distanceTo(underMasterBedPos);
@@ -309,6 +331,18 @@ export function Player() {
     // Study Key is at [13, 1.1, 2]
     const studyKeyPos = new THREE.Vector3(13, 1.1, 2);
     const distToStudyKey = camera.position.distanceTo(studyKeyPos);
+
+    // Shed Key is at [-20, 0.85, 5.5] (Study Desk)
+    const shedKeyPos = new THREE.Vector3(-20, 0.85, 5.5);
+    const distToShedKey = camera.position.distanceTo(shedKeyPos);
+
+    // Cabinet Key is at [0, 0.15, 25] (Living Room Rug)
+    const cabinetKeyPos = new THREE.Vector3(0, 0.15, 25);
+    const distToCabinetKey = camera.position.distanceTo(cabinetKeyPos);
+
+    // Locked Cabinet is at [-53, 1, 8] (Master Bath)
+    const lockedCabinetPos = new THREE.Vector3(-53, 1, 8);
+    const distToLockedCabinet = camera.position.distanceTo(lockedCabinetPos);
 
     // Safe Code is at [-20, 0.85, 5]
     const safeCodePos = new THREE.Vector3(-20, 0.85, 5);
@@ -336,9 +370,10 @@ export function Player() {
     const studyDoorOpen = useGameStore.getState().studyDoorOpen;
     const toolboxOpen = useGameStore.getState().toolboxOpen;
     const toolboxCodeKnown = useGameStore.getState().toolboxCodeKnown;
+    const cabinetOpen = useGameStore.getState().cabinetOpen;
     // const inventory = useGameStore.getState().inventory; // Moved up
     const addToInventory = useGameStore.getState().addToInventory;
-    const isHiding = useGameStore.getState().isHiding;
+    // const isHiding = useGameStore.getState().isHiding; // Moved up
     const radioOn = useGameStore.getState().radioOn;
     const tvOn = useGameStore.getState().tvOn;
     const gateKey = useGameStore.getState().gateKey;
@@ -397,16 +432,9 @@ export function Player() {
             KEYS.e = false;
         }
     } else if (distToToolbox < 2) {
+        // Toolbox is empty now, maybe just a distraction or bonus?
         if (toolboxOpen) {
-             if (!inventory.includes('Screwdriver')) {
-                 setInteractionText('Press E to take Screwdriver');
-                 if (KEYS.e) {
-                     addToInventory('Screwdriver');
-                     KEYS.e = false;
-                 }
-             } else {
-                 setInteractionText('Toolbox is open. Empty.');
-             }
+             setInteractionText('Toolbox is open. Empty.');
         } else {
              setInteractionText('Press E to Unlock Toolbox');
              if (KEYS.e) {
@@ -414,6 +442,28 @@ export function Player() {
                  setGameState('laptop'); // Pause game/show cursor
                  KEYS.e = false;
              }
+        }
+    } else if (distToLockedCabinet < 2.5) {
+        if (cabinetOpen) {
+            if (!inventory.includes('Screwdriver')) {
+                setInteractionText('Press E to take Screwdriver');
+                if (KEYS.e) {
+                    addToInventory('Screwdriver');
+                    KEYS.e = false;
+                }
+            } else {
+                setInteractionText('Cabinet is empty.');
+            }
+        } else {
+            if (inventory.includes('Cabinet Key')) {
+                setInteractionText('Press E to Unlock Cabinet');
+                if (KEYS.e) {
+                    useGameStore.getState().setCabinetOpen(true);
+                    KEYS.e = false;
+                }
+            } else {
+                setInteractionText('Cabinet is Locked. Need Cabinet Key.');
+            }
         }
     } else if (distToUnderBed < 2.5) {
         setInteractionText('Press E to Hide Under Bed');
@@ -461,29 +511,56 @@ export function Player() {
              setInteractionText('Gate is Locked. Need Gate Key.');
         }
     } else if (distToShed < 3) {
-        if (!inventory.includes('Gate Key')) {
-            setInteractionText('Press E to Search Shed');
-            if (KEYS.e) {
-                addToInventory('Gate Key');
-                setInteractionText('Found Gate Key!');
-                KEYS.e = false;
+        if (inventory.includes('Shed Key')) {
+            if (!inventory.includes('Gate Key')) {
+                setInteractionText('Press E to Search Shed');
+                if (KEYS.e) {
+                    addToInventory('Gate Key');
+                    setInteractionText('Found Gate Key!');
+                    KEYS.e = false;
+                }
+            } else {
+                setInteractionText('Shed is empty.');
             }
         } else {
-            setInteractionText('Shed is empty.');
+            setInteractionText('Shed is Locked. Need Shed Key.');
         }
-    } else if (distToFlashlight < 2 && !inventory.includes('Flashlight')) {
+    } else if (distToDogHouse < 2.5) {
+        setInteractionText('Press E to Hide in Dog House');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToBigBush < 2.5) {
+        setInteractionText('Press E to Hide in Bush');
+        if (KEYS.e) {
+            useGameStore.getState().setIsHiding(true);
+            KEYS.e = false;
+        }
+    } else if (distToSecretNote < 3 && !inventory.includes('Secret Note')) {
+        setInteractionText('Press E to read Secret Note');
+        if (KEYS.e) {
+            addToInventory('Secret Note');
+            setInteractionText('Note says: "I hid the Cabinet Key under the Living Room Rug!"');
+            KEYS.e = false;
+        }
+    } else if (distToFlashlight < 3 && !inventory.includes('Flashlight')) {
         setInteractionText('Press E to take Flashlight');
         if (KEYS.e) {
             addToInventory('Flashlight');
             KEYS.e = false;
         }
-    } else if (distToScrewdriver < 2 && !inventory.includes('Screwdriver')) {
-        if (toolboxOpen) {
-            setInteractionText('Press E to take Screwdriver');
-            if (KEYS.e) {
-                addToInventory('Screwdriver');
-                KEYS.e = false;
-            }
+    } else if (distToShedKey < 3 && !inventory.includes('Shed Key')) {
+        setInteractionText('Press E to take Shed Key');
+        if (KEYS.e) {
+            addToInventory('Shed Key');
+            KEYS.e = false;
+        }
+    } else if (distToCabinetKey < 3 && !inventory.includes('Cabinet Key')) {
+        setInteractionText('Press E to take Cabinet Key');
+        if (KEYS.e) {
+            addToInventory('Cabinet Key');
+            KEYS.e = false;
         }
     } else if (distToToolbox < 3 && !toolboxOpen) {
         if (toolboxCodeKnown) {
@@ -578,26 +655,26 @@ export function Player() {
                  setInteractionText('Locked. Need Study Key.');
              }
         }
-    } else if (distToStudyKey < 2 && !inventory.includes('Study Key')) {
+    } else if (distToStudyKey < 3 && !inventory.includes('Study Key')) {
         setInteractionText('Press E to take Study Key');
         if (KEYS.e) {
             addToInventory('Study Key');
             KEYS.e = false;
         }
-    } else if (distToSafeCode < 2 && !inventory.includes('Safe Code')) {
+    } else if (distToSafeCode < 3 && !inventory.includes('Safe Code')) {
         setInteractionText('Press E to take Note (Safe Code)');
         if (KEYS.e) {
             addToInventory('Safe Code');
             setInteractionText('Found Safe Code: 1-9-9-6');
             KEYS.e = false;
         }
-    } else if (distToBattery < 2 && !inventory.includes('Battery')) {
+    } else if (distToBattery < 3 && !inventory.includes('Battery')) {
         setInteractionText('Press E to take Battery');
         if (KEYS.e) {
             addToInventory('Battery');
             KEYS.e = false;
         }
-    } else if (distToEnergyDrink < 2 && !inventory.includes('Energy Drink')) {
+    } else if (distToEnergyDrink < 3 && !inventory.includes('Energy Drink')) {
         setInteractionText('Press E to drink Energy Drink (Speed Boost)');
         if (KEYS.e) {
             addToInventory('Energy Drink');

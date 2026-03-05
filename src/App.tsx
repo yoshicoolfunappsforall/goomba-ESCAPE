@@ -4,11 +4,12 @@ import Laptop from './components/Laptop/Laptop';
 import { SafeKeypad } from './components/UI/SafeKeypad';
 import { ToolboxKeypad } from './components/UI/ToolboxKeypad';
 import { Canvas } from '@react-three/fiber';
-import { PointerLockControls, Sky, Stars, Loader, Environment, PerformanceMonitor, BakeShadows } from '@react-three/drei';
+import { Sky, Stars, Loader, Environment, PerformanceMonitor, BakeShadows } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import { House } from './components/World/House';
 import { Player } from './components/World/Player';
 import { Enemy } from './components/World/Enemy';
+import { Controls } from './components/World/Controls';
 
 function HUD() {
   const interactionText = useGameStore((state) => state.interactionText);
@@ -50,28 +51,118 @@ function HUD() {
 
 function Menu() {
   const setGameState = useGameStore((state) => state.setGameState);
+  const difficulty = useGameStore((state) => state.difficulty);
+  const setDifficulty = useGameStore((state) => state.setDifficulty);
+  const [showSettings, setShowSettings] = useState(false);
+  const sensitivity = useGameStore((state) => state.sensitivity);
+  const setSensitivity = useGameStore((state) => state.setSensitivity);
+  const volume = useGameStore((state) => state.volume);
+  const setVolume = useGameStore((state) => state.setVolume);
   
+  if (showSettings) {
+      return (
+        <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md">
+          <div className="bg-gray-900 p-8 rounded-2xl border border-gray-700 shadow-2xl max-w-md w-full text-center animate-in fade-in zoom-in duration-300">
+            <h2 className="text-3xl font-bold text-white mb-6">Settings</h2>
+            
+            <div className="space-y-6 text-left">
+                <div>
+                    <label className="block text-gray-400 text-sm mb-2">Mouse Sensitivity: {sensitivity.toFixed(1)}</label>
+                    <input 
+                        type="range" 
+                        min="0.1" 
+                        max="3.0" 
+                        step="0.1" 
+                        value={sensitivity} 
+                        onChange={(e) => setSensitivity(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                </div>
+                
+                <div>
+                    <label className="block text-gray-400 text-sm mb-2">Volume: {(volume * 100).toFixed(0)}%</label>
+                    <input 
+                        type="range" 
+                        min="0" 
+                        max="1" 
+                        step="0.1" 
+                        value={volume} 
+                        onChange={(e) => setVolume(parseFloat(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                    />
+                </div>
+            </div>
+
+            <button 
+              onClick={() => setShowSettings(false)}
+              className="mt-8 w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition"
+            >
+              Back
+            </button>
+          </div>
+        </div>
+      );
+  }
+
   return (
     <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-gray-900 p-8 rounded-2xl border border-gray-700 shadow-2xl max-w-md w-full text-center">
-        <h1 className="text-4xl font-bold text-white mb-2">Goomba Escape</h1>
-        <p className="text-gray-400 mb-8">Escape your evil parent's house to play with Jeremy!</p>
+      <div className="bg-gray-900 p-8 rounded-2xl border border-gray-700 shadow-2xl max-w-md w-full text-center animate-in fade-in zoom-in duration-300">
+        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-2 drop-shadow-sm">
+            Goomba Escape
+        </h1>
+        <p className="text-gray-400 mb-8 text-sm tracking-wide uppercase">Stealth Horror Adventure</p>
         
-        <button 
-          onClick={() => setGameState('playing')}
-          className="w-full bg-blue-600 hover:bg-blue-500 text-white font-bold py-3 px-6 rounded-lg transition transform hover:scale-105 mb-4"
-        >
-          Start Game
-        </button>
+        {/* Difficulty Selection */}
+        <div className="mb-6">
+            <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Select Difficulty</p>
+            <div className="flex justify-center space-x-2">
+                {(['easy', 'medium', 'hard'] as const).map((diff) => (
+                    <button
+                        key={diff}
+                        onClick={() => setDifficulty(diff)}
+                        className={`px-4 py-2 rounded-lg font-bold capitalize transition text-sm border ${
+                            difficulty === diff 
+                            ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
+                            : 'bg-gray-800 border-gray-700 text-gray-500 hover:bg-gray-700 hover:text-gray-300'
+                        }`}
+                    >
+                        {diff}
+                    </button>
+                ))}
+            </div>
+            <p className="text-xs text-blue-300 mt-3 h-4 font-medium transition-all duration-300">
+                {difficulty === 'easy' && "Enemy is slow and has poor vision."}
+                {difficulty === 'medium' && "Standard challenge. Stay quiet!"}
+                {difficulty === 'hard' && "Enemy is fast, smart, and hears everything."}
+            </p>
+        </div>
         
-        <div className="text-left text-gray-500 text-sm mt-4 bg-gray-800 p-4 rounded-lg">
-          <p className="font-bold mb-1">Controls:</p>
-          <ul className="list-disc pl-4 space-y-1">
-            <li>WASD to Move</li>
-            <li>Mouse to Look</li>
-            <li>E to Interact with Laptop/Door</li>
-            <li>Don't get caught by the Evil Goomba!</li>
-          </ul>
+        <div className="space-y-3">
+            <button 
+              onClick={() => setGameState('playing')}
+              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition transform hover:scale-[1.02] shadow-lg border border-blue-500/30"
+            >
+              START GAME
+            </button>
+            
+            <button 
+              onClick={() => setShowSettings(true)}
+              className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 px-6 rounded-xl transition border border-gray-700"
+            >
+              SETTINGS
+            </button>
+        </div>
+        
+        <div className="text-left text-gray-500 text-xs mt-8 bg-black/20 p-4 rounded-lg border border-white/5">
+          <p className="font-bold mb-2 text-gray-400 uppercase tracking-wider">Controls</p>
+          <div className="grid grid-cols-2 gap-2">
+            <span>WASD to Move</span>
+            <span>Mouse to Look</span>
+            <span>E to Interact</span>
+            <span>SHIFT to Sprint</span>
+            <span>C to Crouch</span>
+            <span>ESC to Pause</span>
+          </div>
         </div>
       </div>
     </div>
@@ -131,15 +222,6 @@ export default function App() {
   const [dpr, setDpr] = useState(1.5);
   const [lowPerformance, setLowPerformance] = useState(false);
 
-  // Handle pointer lock unlock
-  // We only want to go to menu if we unlocked MANUALLY (ESC), not if we won/lost
-  const onUnlock = () => {
-    const current = useGameStore.getState().gameState;
-    if (current === 'playing') {
-      setGameState('menu');
-    }
-  };
-
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
       {/* 3D World Layer */}
@@ -178,7 +260,7 @@ export default function App() {
             
             {(gameState === 'playing' || gameState === 'laptop') && (
             <>
-                {gameState === 'playing' && <PointerLockControls onUnlock={onUnlock} />}
+                {gameState === 'playing' && <Controls />}
                 <Player />
             </>
             )}

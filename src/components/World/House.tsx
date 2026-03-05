@@ -11,22 +11,40 @@ export function House() {
   
   return (
     <group>
-      {/* Floor */}
+      {/* Base Ground (Grass) */}
       <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[200, 200]} />
+        <meshStandardMaterial color="#2E7D32" roughness={1} />
+      </mesh>
+
+      {/* Interior Floors (Dark Grey) */}
+      {/* Main Living Area */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 17.5]} receiveShadow>
+        <planeGeometry args={[50, 35]} />
         <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
       </mesh>
-      <Grid position={[0, 0.01, 0]} args={[100, 100]} cellSize={1} cellThickness={1} cellColor="#333" sectionSize={5} sectionThickness={1.5} sectionColor="#444" fadeDistance={30} infiniteGrid />
+      
+      {/* Master Bedroom & Bath */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[-40, 0.02, 10]} receiveShadow>
+        <planeGeometry args={[30, 20]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
+      </mesh>
 
-      {/* Outside Grass */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.02, 60]} receiveShadow>
-        <planeGeometry args={[120, 50]} />
-        <meshStandardMaterial color="#2E7D32" roughness={1} />
+      {/* Garage */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[45, 0.02, 15]} receiveShadow>
+        <planeGeometry args={[20, 20]} />
+        <meshStandardMaterial color="#2a2a2a" roughness={0.9} /> {/* Slightly different floor for garage */}
+      </mesh>
+
+      {/* Storage Room */}
+      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[30, 0.02, 25]} receiveShadow>
+        <planeGeometry args={[10, 10]} />
+        <meshStandardMaterial color="#1a1a1a" roughness={0.8} />
       </mesh>
 
       {/* Ceiling */}
       <mesh rotation={[Math.PI / 2, 0, 0]} position={[0, 4, 0]}>
-        <planeGeometry args={[100, 100]} />
+        <planeGeometry args={[200, 200]} />
         <meshStandardMaterial color="#f8fafc" />
       </mesh>
 
@@ -306,6 +324,31 @@ export function House() {
              )
         }
 
+        if (item.name === 'LockedCabinet') {
+            const cabinetOpen = useGameStore.getState().cabinetOpen;
+            return (
+                <group key={`furn-${index}`} position={new THREE.Vector3(...item.position)}>
+                    {/* Cabinet Body (Back half solid) */}
+                    <mesh position={[-0.5, 0, 0]} castShadow receiveShadow>
+                        <boxGeometry args={[1, 2, 2]} />
+                        <meshStandardMaterial color={item.color} />
+                    </mesh>
+                    {/* Door */}
+                    <group position={[0.5, 0, 1]} rotation={[0, cabinetOpen ? 2 : 0, 0]}>
+                        <mesh position={[0, 0, -1]} castShadow>
+                            <boxGeometry args={[0.1, 2, 2]} />
+                            <meshStandardMaterial color={item.color} />
+                        </mesh>
+                        {/* Handle */}
+                        <mesh position={[0.1, 0, -1.8]}>
+                            <sphereGeometry args={[0.1]} />
+                            <meshStandardMaterial color="gold" />
+                        </mesh>
+                    </group>
+                </group>
+            )
+        }
+
         if (item.name === 'Cabinet' || item.name === 'InsideFridge') {
              // Just a box for now, maybe openable later
              return (
@@ -375,9 +418,9 @@ export function House() {
           }
 
           if (item.name === 'Screwdriver') {
-              // Only show if toolbox is open
-              const toolboxOpen = useGameStore.getState().toolboxOpen;
-              if (!toolboxOpen) return null;
+              // Only show if cabinet is open
+              const cabinetOpen = useGameStore.getState().cabinetOpen;
+              if (!cabinetOpen) return null;
 
               return (
                   <group key={`item-${index}`} position={new THREE.Vector3(...item.position)}>

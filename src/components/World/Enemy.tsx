@@ -47,6 +47,20 @@ export function Enemy({
   const isHiding = useGameStore((state) => state.isHiding);
   const radioOn = useGameStore((state) => state.radioOn);
   const tvOn = useGameStore((state) => state.tvOn);
+  const difficulty = useGameStore((state) => state.difficulty);
+
+  // Difficulty Multipliers
+  const difficultyMultipliers = {
+      easy: { speed: 0.6, view: 0.6, fov: 0.6 },
+      medium: { speed: 1.0, view: 1.0, fov: 1.0 },
+      hard: { speed: 1.4, view: 1.5, fov: 1.5 }
+  };
+  
+  const mult = difficultyMultipliers[difficulty];
+  const effectiveSpeed = speed * mult.speed;
+  const effectiveRunSpeed = runSpeed * mult.speed;
+  const effectiveViewDistance = viewDistance * mult.view;
+  const effectiveFov = fov * mult.fov;
   
   // Load sprite texture
   const texture = useTexture(textureUrl);
@@ -65,6 +79,13 @@ export function Enemy({
   const [recentPatrolIndices, setRecentPatrolIndices] = useState<number[]>([]);
   const ENEMY_RADIUS = 0.6 * scale;
 
+  // Additional Outside Patrol Points (Indices 9, 10, 11)
+  const outsidePatrolPoints = [
+      new THREE.Vector3(0, 1, 40), // Path
+      new THREE.Vector3(-20, 1, 45), // Near Dog House
+      new THREE.Vector3(30, 1, 40), // Near Shed
+  ];
+
   // Raycaster for vision
   const raycaster = useRef(new THREE.Raycaster());
   const switchingPatrol = useRef(false);
@@ -76,19 +97,65 @@ export function Enemy({
 
   // Helper to get next patrol point
   const getNextPatrolIndex = (currentIndex: number, avoidNearPos?: THREE.Vector3) => {
-      let availableIndices = patrolPoints.map((_, i) => i).filter(i => i !== currentIndex);
+      const playerZ = camera.position.z;
+      const isPlayerOutside = playerZ > 32;
+      const inventory = useGameStore.getState().inventory;
+      const studyUnlocked = inventory.includes('Study Key');
+      const storageUnlocked = inventory.includes('Storage Key');
       
+      // Combine points dynamically? 
+      // Or just append them to the list and filter by index range?
+      // Let's assume patrolPoints prop has the first 9.
+      // We can't easily modify the prop.
+      // Let's use a local full list.
+      const allPoints = [...patrolPoints, ...outsidePatrolPoints];
+      
+      let availableIndices = allPoints.map((_, i) => i).filter(i => i !== currentIndex);
+      
+      // Filter Locked Rooms
+      // Study is index 6 (Door at -20, 15)
+      if (!studyUnlocked) {
+          availableIndices = availableIndices.filter(i => i !== 6);
+      }
+      
+      // Filter based on Zone
+      if (isPlayerOutside) {
+          // Prefer outside points (indices 9+) + Door (index 0 is Hallway Center [0,1,20], maybe add Door point?)
+          // Let's say indices 9, 10, 11 are outside.
+          // Also include index 3 (Hallway Start [0,1,10]) or maybe a new connector?
+          // Let's just allow all, but weight outside ones?
+          // Or strictly: If player outside, only patrol outside + hallway start.
+          availableIndices = availableIndices.filter(i => i >= 9 || i === 0); 
+      } else {
+          // Player inside: Patrol inside (0-8)
+          // But if enemy is currently outside (index >= 9), it needs to come back in.
+          // So if currentIndex >= 9, force it to go to 0 (Hallway).
+          if (currentIndex >= 9) return 0;
+          
+          availableIndices = availableIndices.filter(i => i < 9);
+      }
+
       // Avoid recently visited
       availableIndices = availableIndices.filter(i => !recentPatrolIndices.includes(i));
       
       // If we ran out of points (history too long), just avoid current
       if (availableIndices.length === 0) {
-          availableIndices = patrolPoints.map((_, i) => i).filter(i => i !== currentIndex);
+          // Re-calculate base available without history
+           if (isPlayerOutside) {
+              availableIndices = allPoints.map((_, i) => i).filter(i => (i >= 9 || i === 0) && i !== currentIndex);
+           } else {
+              availableIndices = allPoints.map((_, i) => i).filter(i => i < 9 && i !== currentIndex);
+           }
+           
+           // Re-apply lock filter
+           if (!studyUnlocked) {
+               availableIndices = availableIndices.filter(i => i !== 6);
+           }
       }
 
       // If we need to avoid a specific position (e.g. after searching), filter by distance
       if (avoidNearPos) {
-          const farIndices = availableIndices.filter(i => patrolPoints[i].distanceTo(avoidNearPos) > 15);
+          const farIndices = availableIndices.filter(i => allPoints[i].distanceTo(avoidNearPos) > 15);
           if (farIndices.length > 0) {
               availableIndices = farIndices;
           }
@@ -112,17 +179,20 @@ export function Enemy({
   const checkDoors = (pos: THREE.Vector3) => {
       const state = useGameStore.getState();
       const doors = [
-          { pos: new THREE.Vector3(1, 2, 5), open: state.bedroomDoorOpen, set: state.setBedroomDoorOpen },
-          { pos: new THREE.Vector3(-5, 2, 10), open: state.bathroomDoorOpen, set: state.setBathroomDoorOpen },
-          { pos: new THREE.Vector3(-25.5, 2, 17.5), open: state.masterBedroomDoorOpen, set: state.setMasterBedroomDoorOpen },
-          { pos: new THREE.Vector3(5, 2, 9.5), open: state.guestDoorOpen, set: state.setGuestDoorOpen },
-          { pos: new THREE.Vector3(20, 2, 15), open: state.diningDoorOpen, set: state.setDiningDoorOpen },
-          { pos: new THREE.Vector3(-20, 2, 15), open: state.studyDoorOpen, set: state.setStudyDoorOpen },
+          { pos: new THREE.Vector3(1, 2, 5), open: state.bedroomDoorOpen, set: state.setBedroomDoorOpen, locked: false },
+          { pos: new THREE.Vector3(-5, 2, 10), open: state.bathroomDoorOpen, set: state.setBathroomDoorOpen, locked: false },
+          { pos: new THREE.Vector3(-25.5, 2, 17.5), open: state.masterBedroomDoorOpen, set: state.setMasterBedroomDoorOpen, locked: false },
+          { pos: new THREE.Vector3(5, 2, 9.5), open: state.guestDoorOpen, set: state.setGuestDoorOpen, locked: false },
+          { pos: new THREE.Vector3(20, 2, 15), open: state.diningDoorOpen, set: state.setDiningDoorOpen, locked: false },
+          { pos: new THREE.Vector3(-20, 2, 15), open: state.studyDoorOpen, set: state.setStudyDoorOpen, locked: !state.inventory.includes('Study Key') },
+          { pos: new THREE.Vector3(25, 2, 25), open: state.storageOpen, set: state.setStorageOpen, locked: !state.inventory.includes('Storage Key') },
       ];
 
       for (const door of doors) {
           if (!door.open && pos.distanceTo(door.pos) < 2.5) {
-              door.set(true); // Enemy opens door
+              if (!door.locked) {
+                  door.set(true); // Enemy opens door
+              }
           }
       }
   };
@@ -214,21 +284,14 @@ export function Enemy({
       const toPlayer = new THREE.Vector3().subVectors(playerPos, enemyPos);
       const dist = toPlayer.length();
 
-      if (dist > viewDistance) return false;
+      if (dist > effectiveViewDistance) return false;
 
       // FOV Check
       const enemyDir = new THREE.Vector3();
       enemyRef.current?.getWorldDirection(enemyDir);
       const angle = enemyDir.angleTo(toPlayer);
       
-      // fov prop: 1 = 360 (PI), 0.5 = 180 (PI/2), 0.25 = 90 (PI/4)
-      // Actually let's map it: fov is the dot product threshold or angle threshold?
-      // Let's treat fov as "percentage of 360 vision". 
-      // 1.0 = 360 deg. 0.5 = 180 deg (front). 0.25 = 90 deg.
-      // Angle is 0 to PI. 
-      // If fov is 1, we see everything.
-      // If fov is 0.5, we see if angle < PI/2.
-      const maxAngle = fov * Math.PI;
+      const maxAngle = effectiveFov * Math.PI;
       if (angle > maxAngle) return false;
 
       // Raycast check for walls/obstacles
@@ -336,16 +399,16 @@ export function Enemy({
     // --- State Behavior ---
 
     let moveTarget: THREE.Vector3 | null = null;
-    let currentSpeed = speed;
+    let currentSpeed = effectiveSpeed;
 
     if (aiState === 'chase') {
         moveTarget = playerPos;
-        currentSpeed = runSpeed;
+        currentSpeed = effectiveRunSpeed;
         // Face player
         enemyRef.current.lookAt(playerPos.x, enemyPos.y, playerPos.z);
     } else if (aiState === 'search') {
         moveTarget = targetPos || lastKnownPos;
-        currentSpeed = speed * 1.5;
+        currentSpeed = effectiveSpeed * 1.5;
         
         // Timer logic
         setSearchTimer((prev) => prev - delta);
@@ -357,7 +420,7 @@ export function Enemy({
         }
     } else if (aiState === 'investigate') {
         moveTarget = targetPos;
-        currentSpeed = speed;
+        currentSpeed = effectiveSpeed;
         
         if (moveTarget && enemyPos.distanceTo(moveTarget) < 2.0) {
              // Reached noise source
@@ -376,9 +439,12 @@ export function Enemy({
     } else {
         // Patrol
         // Ensure patrol index is valid
-        if (patrolIndex >= patrolPoints.length) setPatrolIndex(0);
-        moveTarget = patrolPoints[patrolIndex];
-        currentSpeed = speed;
+        // Combine points again for lookup
+        const allPoints = [...patrolPoints, ...outsidePatrolPoints];
+        
+        if (patrolIndex >= allPoints.length) setPatrolIndex(0);
+        moveTarget = allPoints[patrolIndex];
+        currentSpeed = effectiveSpeed;
 
         if (enemyPos.distanceTo(moveTarget) < 1.0 && !switchingPatrol.current) {
             switchingPatrol.current = true;

@@ -37,8 +37,17 @@ interface GameState {
   setToolboxKeypadOpen: (open: boolean) => void;
   toolboxCodeKnown: boolean;
   setToolboxCodeKnown: (known: boolean) => void;
+  cabinetOpen: boolean;
+  setCabinetOpen: (open: boolean) => void;
   gateKey: boolean;
   setGateKey: (has: boolean) => void;
+  
+  // Settings
+  sensitivity: number;
+  setSensitivity: (val: number) => void;
+  volume: number;
+  setVolume: (val: number) => void;
+  
   isHiding: boolean;
   setIsHiding: (hiding: boolean) => void;
   noiseLevel: number;
@@ -47,6 +56,8 @@ interface GameState {
   setTvOn: (on: boolean) => void;
   radioOn: boolean;
   setRadioOn: (on: boolean) => void;
+  difficulty: 'easy' | 'medium' | 'hard';
+  setDifficulty: (diff: 'easy' | 'medium' | 'hard') => void;
   inventory: string[];
   addToInventory: (item: string) => void;
   interactionText: string | null;
@@ -91,8 +102,16 @@ export const useGameStore = create<GameState>((set) => ({
   setToolboxKeypadOpen: (open) => set({ toolboxKeypadOpen: open }),
   toolboxCodeKnown: false,
   setToolboxCodeKnown: (known) => set({ toolboxCodeKnown: known }),
+  cabinetOpen: false,
+  setCabinetOpen: (open) => set({ cabinetOpen: open }),
   gateKey: false,
   setGateKey: (has) => set({ gateKey: has }),
+  
+  sensitivity: 1,
+  setSensitivity: (val) => set({ sensitivity: val }),
+  volume: 0.5,
+  setVolume: (val) => set({ volume: val }),
+  
   isHiding: false,
   setIsHiding: (hiding) => set({ isHiding: hiding }),
   noiseLevel: 0,
@@ -101,6 +120,8 @@ export const useGameStore = create<GameState>((set) => ({
   setTvOn: (on) => set({ tvOn: on }),
   radioOn: false,
   setRadioOn: (on) => set({ radioOn: on }),
+  difficulty: 'medium',
+  setDifficulty: (diff) => set({ difficulty: diff }),
   inventory: [],
   addToInventory: (item) => set((state) => ({ inventory: [...state.inventory, item] })),
   interactionText: null,
@@ -124,6 +145,7 @@ export const useGameStore = create<GameState>((set) => ({
     toolboxOpen: false,
     toolboxKeypadOpen: false,
     toolboxCodeKnown: false,
+    cabinetOpen: false,
     gateKey: false,
     isHiding: false,
     noiseLevel: 0,

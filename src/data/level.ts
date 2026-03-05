@@ -22,6 +22,7 @@ export const WALLS: Wall[] = [
 
   // --- HALLWAY ---
   // Right Wall (Shared with Guest Room) - Split for Door
+  { position: [5 + T/2, H/2, 2.5], size: [5, H, T], rotation: [0, Math.PI / 2, 0] }, // z=0 to 5 (Added to close gap)
   { position: [5 + T/2, H/2, 6.5], size: [3, H, T], rotation: [0, Math.PI / 2, 0] }, // z=5 to 8
   { position: [5 + T/2, 5, 9.5], size: [3, 2, T], rotation: [0, Math.PI / 2, 0] }, // Door Header z=8 to 11
   { position: [5 + T/2, H/2, 13], size: [4, H, T], rotation: [0, Math.PI / 2, 0] }, // z=11 to 15
@@ -97,7 +98,8 @@ export const WALLS: Wall[] = [
   // Left Wall (Shared with Master Bedroom) - Split for Door
   { position: [-25 - T/2, H/2, 8], size: [16, H, T], rotation: [0, Math.PI / 2, 0] }, // z=0 to 16
   { position: [-25 - T/2, 5, 17.5], size: [3, 2, T], rotation: [0, Math.PI / 2, 0] }, // Door Header z=16 to 19
-  { position: [-25 - T/2, H/2, 27], size: [16, H, T], rotation: [0, Math.PI / 2, 0] }, // z=19 to 35
+  { position: [-25 - T/2, H/2, 19.5], size: [1, H, T], rotation: [0, Math.PI / 2, 0] }, // z=19 to 20
+  { position: [-25 - T/2, H/2, 27.5], size: [15, H, T], rotation: [0, Math.PI / 2, 0] }, // z=20 to 35 (Restored Living Room Left Wall)
   
   // Right Wall (Split for Storage Room)
   { position: [25 + T/2, H/2, 19], size: [8, H, T], rotation: [0, Math.PI / 2, 0] },
@@ -109,8 +111,8 @@ export const WALLS: Wall[] = [
   { position: [13.5, H/2, 35 + T/2], size: [23, H, T] },
   { position: [0, 5, 35 + T/2], size: [4, 2, T] }, 
 
-  // Kitchen Divider
-  { position: [10, H/2, 25], size: [10, H, T], rotation: [0, Math.PI / 2, 0] },
+  // Kitchen Divider - REMOVED (Blocking way)
+  // { position: [10, H/2, 25], size: [10, H, T], rotation: [0, Math.PI / 2, 0] },
 
   // --- STORAGE ROOM ---
   { position: [35 + T/2, H/2, 25], size: [10, H, T], rotation: [0, Math.PI / 2, 0] },
@@ -120,8 +122,17 @@ export const WALLS: Wall[] = [
   // --- MASTER BEDROOM (Left of Living Room) ---
   // Right wall is shared with Living Room (defined above)
   { position: [-35, H/2, 0], size: [20, H, 1] }, // Back Wall Master
-  { position: [-45, H/2, 10], size: [1, H, 20] }, // Left Wall Master
+  // Left Wall Master (Shared with Master Bath) - Split for Door
+  { position: [-45, H/2, 1.75], size: [3.5, H, 1], rotation: [0, Math.PI / 2, 0] }, // z=0 to 3.5 (FIXED SIZE)
+  { position: [-45, 5, 5], size: [3, 2, 1], rotation: [0, Math.PI / 2, 0] }, // Door Header z=3.5 to 6.5 (FIXED SIZE)
+  { position: [-45, H/2, 13.25], size: [13.5, H, 1], rotation: [0, Math.PI / 2, 0] }, // z=6.5 to 20 (FIXED SIZE)
+  
   { position: [-35, H/2, 20], size: [20, H, 1] }, // Front Wall Master
+
+  // --- MASTER BATHROOM (Left of Master Bedroom) ---
+  { position: [-50, H/2, 0], size: [10, H, 1] }, // Back Wall
+  { position: [-50, H/2, 10], size: [10, H, 1] }, // Front Wall
+  { position: [-55, H/2, 5], size: [10, H, 1], rotation: [0, Math.PI / 2, 0] }, // Left Wall (FIXED SIZE)
 
   // --- GARAGE (Right of Kitchen) ---
   { position: [35, H/2, 15], size: [1, H, 20] }, // Wall separating Garage from House
@@ -130,9 +141,10 @@ export const WALLS: Wall[] = [
   { position: [45, H/2, 25], size: [20, H, 1] }, // Front Wall Garage
 
   // --- OUTSIDE FENCES ---
-  { position: [0, 1.5, 50], size: [100, 3, 1] }, // Front Fence (Gate at center)
-  { position: [-50, 1.5, 25], size: [1, 3, 50] }, // Left Fence
-  { position: [50, 1.5, 25], size: [1, 3, 50] }, // Right Fence
+  { position: [-40, 1.5, 50], size: [70, 3, 1] }, // Front Fence Left
+  { position: [40, 1.5, 50], size: [70, 3, 1] }, // Front Fence Right
+  { position: [-75, 1.5, 25], size: [1, 3, 50] }, // Left Fence
+  { position: [75, 1.5, 25], size: [1, 3, 50] }, // Right Fence
 ];
 
 export const FURNITURE = [
@@ -231,6 +243,15 @@ export const FURNITURE = [
   { position: [-17, 1.5, 2], size: [1, 3, 4], color: '#3E2723', name: 'Bookshelf' },
   { position: [-20, 3.8, 7.5], size: [0, 0, 0], color: '#fff', name: 'CeilingLight' },
 
+  // Master Bathroom (New)
+  { position: [-53, 0.5, 2], size: [2, 1, 2], color: '#fff', name: 'Toilet' },
+  { position: [-53, 1, 5], size: [2, 0.1, 3], color: '#fff', name: 'BathCounter' },
+  { position: [-53, 1.2, 5], size: [1, 0.2, 1], color: '#eee', name: 'Sink' },
+  { position: [-53, 1, 8], size: [2, 2, 2], color: '#5D4037', name: 'LockedCabinet' }, // Locked Cabinet
+  { position: [-52.5, 0.05, 5], size: [4, 0.1, 6], color: '#004D40', name: 'Rug' }, // Bath Rug
+  { position: [-54, 0, 1], size: [0, 0, 0], color: '#fff', name: 'Plant' }, // Bath Plant
+  { position: [-50, 2, 0.1], size: [0, 0, 0], color: '#fff', name: 'Poster' }, // Bath Poster
+
   // Outside
   { position: [30, 1.5, 40], size: [3, 3, 3], color: '#795548', name: 'Shed' }, 
   { position: [-20, 1, 40], size: [1, 2, 1], color: '#8D6E63', name: 'TreeTrunk' },
@@ -252,13 +273,17 @@ export const FURNITURE = [
   { position: [0, 0.05, 42.5], size: [3, 0.1, 15], color: '#9E9E9E', name: 'Path' },
 
   { position: [-35, 0.2, 10], size: [3.5, 0.4, 5.5], color: '#000', name: 'UnderMasterBed' }, // Hiding Spot
+  
+  // New Yard Items
+  { position: [-20, 0.75, 45], size: [2, 1.5, 3], color: '#795548', name: 'DogHouse' },
+  { position: [10, 0.75, 45], size: [2.5, 1.5, 2.5], color: '#2E7D32', name: 'BigBush' }, // Hiding Spot
 ];
 
 export const ITEMS = [
     { position: [-40, 1, 15], name: 'Storage Key', type: 'key' }, // Inside Safe (Master Bedroom)
-    { position: [3, 0.85, -3], name: 'Flashlight', type: 'tool' }, // On Desk
+    { position: [32, 0.5, 25], name: 'Flashlight', type: 'tool' }, // Floor of Storage Room
     { position: [-4.5, 0.5, 12], name: 'House Key', type: 'key' }, // Inside Vent (Hallway Left)
-    { position: [34, 3.2, 25], name: 'Screwdriver', type: 'tool' }, // Inside Toolbox (y adjusted)
+    { position: [-53, 1, 8], name: 'Screwdriver', type: 'tool' }, // Moved to Master Bathroom (Inside Locked Cabinet)
     { position: [30, 2, 40], name: 'Gate Key', type: 'key' }, // In Shed
     
     // New Items
@@ -266,4 +291,7 @@ export const ITEMS = [
     { position: [-20, 0.85, 5], name: 'Safe Code', type: 'paper' }, // On Study Desk
     { position: [25, 0.85, 7.5], name: 'Battery', type: 'item' }, // On Dining Table
     { position: [-13, 1.3, 13], name: 'Energy Drink', type: 'consumable' }, // On Bathroom Sink
+    { position: [-20, 0.85, 5.5], name: 'Shed Key', type: 'key' }, // Moved to Study Desk
+    { position: [-24, 0.85, 18], name: 'Secret Note', type: 'paper' }, // Inside Study Room
+    { position: [0, 0.15, 25], name: 'Cabinet Key', type: 'key' }, // Under Living Room Rug
 ];
