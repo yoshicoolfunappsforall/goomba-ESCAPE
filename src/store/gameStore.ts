@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface GameState {
-  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won';
-  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won') => void;
+  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story';
+  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story') => void;
   hasKey: boolean;
   setHasKey: (hasKey: boolean) => void;
   doorCodeKnown: boolean;

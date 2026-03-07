@@ -280,8 +280,8 @@ export function Enemy({
     return false;
   };
 
-  const canSeePlayer = (enemyPos: THREE.Vector3, playerPos: THREE.Vector3) => {
-      if (isHiding) return false; 
+  const canSeePlayer = (enemyPos: THREE.Vector3, playerPos: THREE.Vector3, ignoreHiding = false) => {
+      if (isHiding && !ignoreHiding) return false; 
 
       const toPlayer = new THREE.Vector3().subVectors(playerPos, enemyPos);
       const dist = toPlayer.length();
@@ -360,9 +360,18 @@ export function Enemy({
     const distToPlayer = enemyPos.distanceTo(playerPos);
 
     // --- ALWAYS CHECK CATCH ---
-    if (distToPlayer < catchDistance && !isHiding) { 
-        setGameState('caught');
-        return;
+    if (distToPlayer < catchDistance) {
+        if (!isHiding) {
+            setGameState('jumpscare');
+            return;
+        } else {
+            // Check if player is hiding but enemy is close and can see them (ignoring hiding flag)
+            // If enemy is VERY close (e.g. < 2.5) and has line of sight, jumpscare!
+            if (distToPlayer < 2.5 && canSeePlayer(enemyPos, playerPos, true)) {
+                 setGameState('jumpscare');
+                 return;
+            }
+        }
     }
 
     // --- State Transitions ---
@@ -393,9 +402,26 @@ export function Enemy({
         setTargetPos(playerPos.clone()); // Target is player
     } else if (aiState === 'chase') {
         // Lost sight
+        
+        // Anti-Sniping Logic:
+        // If player is hiding and we are far away, we shouldn't know exactly where they hid.
+        if (isHiding && lastKnownPos) {
+            const distToHidingSpot = enemyPos.distanceTo(lastKnownPos);
+            // If more than 8 units away (approx 1 room length), lose the trail
+            if (distToHidingSpot > 8.0) {
+                // Search at current location instead of running to the hiding spot
+                setLastKnownPos(enemyPos.clone());
+                setSearchTimer(3.0); // Shorter search since we're confused
+            } else {
+                // We saw them hide nearby, investigate the spot
+                setSearchTimer(5.0);
+            }
+        } else {
+            setSearchTimer(5.0); // Standard search
+        }
+        
         setAiState('search');
-        setSearchTimer(5.0); // Search for 5 seconds
-        // Target remains last known pos
+        // Target remains last known pos (which we might have just modified)
     }
 
     // --- State Behavior ---
@@ -457,12 +483,106 @@ export function Enemy({
 
     // --- Movement ---
     if (moveTarget) {
-        const moveDir = new THREE.Vector3().subVectors(moveTarget, enemyPos).normalize();
+        // 1. Calculate base direction to target
+        let moveDir = new THREE.Vector3().subVectors(moveTarget, enemyPos).normalize();
         
-        // Smooth rotation
+        // 2. Obstacle Avoidance (Whiskers)
+        // Only apply if moving (not stuck)
+        if (currentSpeed > 0) {
+            const lookDir = new THREE.Vector3();
+            enemyRef.current.getWorldDirection(lookDir);
+            
+            // Raycast settings
+            const whiskerLength = 2.0 * scale; // Increased length for earlier detection
+            const avoidanceForce = new THREE.Vector3();
+            let obstacleDetected = false;
+            let allBlocked = false;
+
+            // Front Ray
+            raycaster.current.set(enemyPos, lookDir);
+            raycaster.current.far = whiskerLength;
+            const frontHits = raycaster.current.intersectObjects(scene.children, true);
+            
+            // Left Ray (45 degrees) - Wider angle
+            const leftDir = lookDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), Math.PI / 4);
+            raycaster.current.set(enemyPos, leftDir);
+            const leftHits = raycaster.current.intersectObjects(scene.children, true);
+
+            // Right Ray (-45 degrees) - Wider angle
+            const rightDir = lookDir.clone().applyAxisAngle(new THREE.Vector3(0, 1, 0), -Math.PI / 4);
+            raycaster.current.set(enemyPos, rightDir);
+            const rightHits = raycaster.current.intersectObjects(scene.children, true);
+
+            // Filter out enemy itself from hits (helper function)
+            const isValidHit = (hits: THREE.Intersection[]) => {
+                for (const hit of hits) {
+                    let obj: THREE.Object3D | null = hit.object;
+                    let isEnemy = false;
+                    while (obj) {
+                        if (obj === enemyRef.current) { isEnemy = true; break; }
+                        obj = obj.parent;
+                    }
+                    if (!isEnemy && hit.distance < whiskerLength) return true;
+                }
+                return false;
+            };
+
+            const frontBlocked = isValidHit(frontHits);
+            const leftBlocked = isValidHit(leftHits);
+            const rightBlocked = isValidHit(rightHits);
+
+            if (frontBlocked) {
+                obstacleDetected = true;
+                // If front blocked, check sides
+                if (!leftBlocked && !rightBlocked) {
+                    // Both sides clear, pick random or alternate
+                    // Default to right for consistency
+                    avoidanceForce.add(rightDir.multiplyScalar(3.0));
+                } else if (!leftBlocked) {
+                    avoidanceForce.add(leftDir.multiplyScalar(3.0)); // Steer Left
+                } else if (!rightBlocked) {
+                    avoidanceForce.add(rightDir.multiplyScalar(3.0)); // Steer Right
+                } else {
+                    // All blocked!
+                    allBlocked = true;
+                }
+            } else {
+                // Front clear, but check sides for grazing
+                if (leftBlocked) {
+                    avoidanceForce.add(rightDir.multiplyScalar(1.5)); // Nudge Right strongly
+                    obstacleDetected = true;
+                }
+                if (rightBlocked) {
+                    avoidanceForce.add(leftDir.multiplyScalar(1.5)); // Nudge Left strongly
+                    obstacleDetected = true;
+                }
+            }
+
+            if (allBlocked) {
+                // Turn around completely
+                moveDir.negate();
+                // Also force a repath if patrolling
+                if (aiState === 'patrol') {
+                    const nextIdx = getNextPatrolIndex(patrolIndex, enemyPos);
+                    setPatrolIndex(nextIdx);
+                }
+            } else if (obstacleDetected) {
+                // Blend avoidance with target direction
+                // If very close to obstacle, avoidance takes priority
+                moveDir.add(avoidanceForce).normalize();
+            }
+        }
+        
+        // Smooth rotation towards new blended direction
         if (aiState !== 'chase') {
             const targetRotation = new THREE.Quaternion().setFromUnitVectors(new THREE.Vector3(0, 0, 1), moveDir);
-            enemyRef.current.quaternion.slerp(targetRotation, 5 * delta);
+            enemyRef.current.quaternion.slerp(targetRotation, 8 * delta); // Faster rotation
+        } else {
+             // In chase, we want to face player, but move around obstacles
+             // So we separate "facing" from "moving"
+             // Face player
+             enemyRef.current.lookAt(playerPos.x, enemyPos.y, playerPos.z);
+             // But move along moveDir (which includes avoidance)
         }
 
         const moveVec = moveDir.multiplyScalar(currentSpeed * delta);
@@ -473,12 +593,17 @@ export function Enemy({
             enemyRef.current.position.x += moveVec.x;
         } else {
             // Slide along wall? Or just stop X
+            // If stuck on X, maybe push Z slightly to slide?
+             enemyRef.current.position.z += (Math.random() - 0.5) * 0.05;
         }
 
         // Try Z movement
         const nextZ = enemyRef.current.position.clone().add(new THREE.Vector3(0, 0, moveVec.z));
         if (!checkCollision(nextZ)) {
             enemyRef.current.position.z += moveVec.z;
+        } else {
+             // If stuck on Z, maybe push X slightly to slide?
+             enemyRef.current.position.x += (Math.random() - 0.5) * 0.05;
         }
     }
   });

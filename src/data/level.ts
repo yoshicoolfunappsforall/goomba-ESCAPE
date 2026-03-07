@@ -385,6 +385,18 @@ export const FURNITURE_2ND_FLOOR = [
     { position: [0, 20.5, -28], size: [6, 1, 3], color: '#333', name: 'ComputerDesk' },
     { position: [0, 21.5, -28], size: [2, 1.5, 0.1], color: '#000', name: 'GoomOSComputer' }, // Screen
     { position: [0, 20.5, -26], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
+
+    // Basement (Moved to Y=50 to avoid Y<0 issues)
+    { position: [0, 49.5, 0], size: [20, 1, 20], color: '#333', name: 'BasementFloor' }, // Floor
+    { position: [0, 55, 10], size: [20, 10, 1], color: '#222', name: 'BasementWallBack' },
+    { position: [0, 55, -10], size: [20, 10, 1], color: '#222', name: 'BasementWallFront' },
+    { position: [10, 55, 0], size: [1, 10, 20], color: '#222', name: 'BasementWallRight' },
+    { position: [-10, 55, 0], size: [1, 10, 20], color: '#222', name: 'BasementWallLeft' },
+    { position: [0, 51, 0], size: [2, 4, 0.5], color: '#5D4037', name: 'BasementLadder' }, // Ladder to exit
+    { position: [5, 51, 5], size: [2, 2, 2], color: '#444', name: 'BasementBox1' },
+    { position: [-5, 51, -5], size: [3, 1.5, 3], color: '#444', name: 'BasementBox2' },
+    { position: [8, 51, -8], size: [1, 3, 1], color: '#555', name: 'BasementPipe' },
+    { position: [-30, 0.1, 12], size: [2, 0.1, 2], color: '#3E2723', name: 'Trapdoor' }, // Trapdoor in Master Bedroom
 ];
 
 export const ITEMS = [

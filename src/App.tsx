@@ -13,13 +13,79 @@ import { Enemy } from './components/World/Enemy';
 import { Controls } from './components/World/Controls';
 
 import { GoomOS } from './components/UI/GoomOS';
+import { useThree, useFrame } from '@react-three/fiber';
+
+function PlayerLight() {
+    const { camera } = useThree();
+    const [inBasement, setInBasement] = useState(false);
+    // We can't easily access lowPerformance from parent here without context or props, 
+    // but we can just default to showing stars if not in basement.
+    // Or better, move this logic back into the main component or pass props.
+    // For simplicity, let's just render the environment here.
+
+    useFrame(() => {
+        if (camera.position.y > 40) {
+            if (!inBasement) setInBasement(true);
+        } else {
+            if (inBasement) setInBasement(false);
+        }
+    });
+
+    return (
+        <>
+            {!inBasement && (
+                <>
+                    <Sky sunPosition={[100, 20, 100]} turbidity={0.5} rayleigh={0.5} mieCoefficient={0.005} mieDirectionalG={0.8} />
+                    <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />
+                    <Environment preset="night" />
+                    <ambientLight intensity={0.1} />
+                </>
+            )}
+            {inBasement && <ambientLight intensity={0.01} />}
+        </>
+    );
+}
+
+function useAutoUiScale() {
+  const [scale, setScale] = useState(1);
+  
+  useEffect(() => {
+    const handleResize = () => {
+      const width = window.innerWidth;
+      const height = window.innerHeight;
+      
+      // Target a smaller "safe area" to make UI elements larger
+      // Lowering this value makes the UI bigger
+      const targetWidth = 1000; 
+      const targetHeight = 600;
+      
+      const scaleX = width / targetWidth;
+      const scaleY = height / targetHeight;
+      
+      // Use the smaller scale to ensure everything fits (contain)
+      const newScale = Math.min(scaleX, scaleY);
+      
+      // Allow it to scale up quite a bit (2.5x) for large screens
+      // Minimum 0.6x for very small screens
+      setScale(Math.max(0.6, Math.min(newScale, 2.5)));
+    };
+    
+    window.addEventListener('resize', handleResize);
+    handleResize(); // Initial calculation
+    
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+  
+  return scale;
+}
 
 function HUD() {
   const interactionText = useGameStore((state) => state.interactionText);
   const inventory = useGameStore((state) => state.inventory);
+  const uiScale = useAutoUiScale();
   
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8">
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8" style={{ transform: `scale(${uiScale})`, transformOrigin: 'top left', width: `${100/uiScale}%`, height: `${100/uiScale}%` }}>
       <div className="flex justify-between items-start">
         <div className="bg-black/50 text-white p-2 rounded backdrop-blur-sm">
           <h2 className="text-xl font-bold">Goomba Escape</h2>
@@ -63,16 +129,51 @@ function Menu() {
   const setSensitivity = useGameStore((state) => state.setSensitivity);
   const volume = useGameStore((state) => state.volume);
   const setVolume = useGameStore((state) => state.setVolume);
+  const uiScale = useAutoUiScale();
+  
+  const [splashText, setSplashText] = useState("Horror Edition");
+
+  useEffect(() => {
+    const splashTexts = [
+      "Don't look back!",
+      "He is watching...",
+      "Run for your life!",
+      "No escape...",
+      "Silence is golden",
+      "Hide or die",
+      "Not your average mushroom",
+      "Mario can't save you",
+      "Stomp won't work",
+      "Behind you!",
+      "Do not blink",
+      "Fear the Goomba",
+      "It sees you",
+      "Keep moving",
+      "Don't make a sound",
+      "They are everywhere",
+      "Trust no one",
+      "Is that a footstep?",
+      "Goomba sees all"
+    ];
+    setSplashText(splashTexts[Math.floor(Math.random() * splashTexts.length)]);
+  }, []);
   
   if (showSettings) {
       return (
-        <div className="absolute inset-0 bg-black/90 flex items-center justify-center z-50 backdrop-blur-md">
-          <div className="bg-gray-900 p-8 rounded-2xl border border-gray-700 shadow-2xl max-w-md w-full text-center animate-in fade-in zoom-in duration-300">
-            <h2 className="text-3xl font-bold text-white mb-6">Settings</h2>
+        <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 backdrop-blur-md">
+          <div 
+            className="bg-gray-900/80 p-12 rounded-none border border-gray-800 shadow-2xl max-w-2xl w-full text-center animate-in fade-in zoom-in duration-300 relative overflow-hidden"
+            style={{ transform: `scale(${uiScale})` }}
+          >
+            {/* Decorative Lines */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-900 to-transparent opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-900 to-transparent opacity-50"></div>
+
+            <h2 className="text-4xl font-black text-white mb-12 tracking-[0.2em] uppercase border-b border-gray-800 pb-4">Settings</h2>
             
-            <div className="space-y-6 text-left">
-                <div>
-                    <label className="block text-gray-400 text-sm mb-2">Mouse Sensitivity: {sensitivity.toFixed(1)}</label>
+            <div className="space-y-10 text-left px-8">
+                <div className="group">
+                    <label className="block text-gray-400 text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Mouse Sensitivity: <span className="text-white ml-2">{sensitivity.toFixed(1)}</span></label>
                     <input 
                         type="range" 
                         min="0.1" 
@@ -80,12 +181,12 @@ function Menu() {
                         step="0.1" 
                         value={sensitivity} 
                         onChange={(e) => setSensitivity(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-1 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
                     />
                 </div>
                 
-                <div>
-                    <label className="block text-gray-400 text-sm mb-2">Volume: {(volume * 100).toFixed(0)}%</label>
+                <div className="group">
+                    <label className="block text-gray-400 text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Volume: <span className="text-white ml-2">{(volume * 100).toFixed(0)}%</span></label>
                     <input 
                         type="range" 
                         min="0" 
@@ -93,16 +194,16 @@ function Menu() {
                         step="0.1" 
                         value={volume} 
                         onChange={(e) => setVolume(parseFloat(e.target.value))}
-                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer accent-blue-600"
+                        className="w-full h-1 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
                     />
                 </div>
             </div>
 
             <button 
               onClick={() => setShowSettings(false)}
-              className="mt-8 w-full bg-gray-700 hover:bg-gray-600 text-white font-bold py-3 px-6 rounded-lg transition"
+              className="mt-16 w-full bg-transparent hover:bg-white/5 text-gray-400 hover:text-white font-bold py-4 px-6 border border-gray-700 hover:border-gray-500 transition-all duration-300 uppercase tracking-widest text-sm"
             >
-              Back
+              Return to Menu
             </button>
           </div>
         </div>
@@ -111,97 +212,82 @@ function Menu() {
 
   return (
     <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
-      <div className="bg-gray-900 p-8 rounded-2xl border border-gray-700 shadow-2xl max-w-md w-full text-center animate-in fade-in zoom-in duration-300">
-        <h1 className="text-5xl font-black text-transparent bg-clip-text bg-gradient-to-r from-blue-400 to-purple-600 mb-2 drop-shadow-sm">
-            Goomba Escape
-        </h1>
-        <p className="text-gray-400 mb-8 text-sm tracking-wide uppercase">Stealth Horror Adventure</p>
+      <div 
+        className="relative w-full max-w-4xl flex flex-col items-center"
+        style={{ transform: `scale(${uiScale})` }}
+      >
         
-        {/* Difficulty Selection */}
-        <div className="mb-6">
-            <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Select Difficulty</p>
-            <div className="flex justify-center space-x-2">
+        {/* Title Section */}
+        <div className="mb-16 text-center relative">
+            <h1 className="text-8xl font-black text-white mb-2 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                GOOMBA
+            </h1>
+            <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-600 to-red-900 tracking-tighter relative -mt-4">
+                ESCAPE
+            </h1>
+            <div className="absolute -right-12 top-0 rotate-12 bg-yellow-500 text-black font-bold px-3 py-1 text-xs uppercase tracking-widest shadow-lg transform hover:scale-110 transition-transform cursor-default animate-pulse">
+                {splashText}
+            </div>
+        </div>
+        
+        {/* Menu Items */}
+        <div className="w-full max-w-md space-y-4 relative z-10">
+            
+            {/* Play Button */}
+            <button 
+              onClick={() => setGameState('story')}
+              className="group w-full bg-white/5 hover:bg-red-900/20 backdrop-blur-md border border-white/10 hover:border-red-500/50 text-white font-bold py-6 px-8 transition-all duration-300 transform hover:scale-105 hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] flex items-center justify-between"
+            >
+              <span className="text-xl tracking-[0.2em] uppercase group-hover:text-red-500 transition-colors">Start Game</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500">►</span>
+            </button>
+
+            {/* Difficulty Selector */}
+            <div className="grid grid-cols-3 gap-2">
                 {(['easy', 'medium', 'hard'] as const).map((diff) => (
                     <button
                         key={diff}
                         onClick={() => setDifficulty(diff)}
-                        className={`px-4 py-2 rounded-lg font-bold capitalize transition text-sm border ${
+                        className={`py-3 text-xs font-bold uppercase tracking-widest transition-all border ${
                             difficulty === diff 
-                            ? 'bg-blue-600/20 border-blue-500 text-blue-400 shadow-[0_0_15px_rgba(59,130,246,0.5)]' 
-                            : 'bg-gray-800 border-gray-700 text-gray-500 hover:bg-gray-700 hover:text-gray-300'
+                            ? 'bg-white text-black border-white' 
+                            : 'bg-transparent text-gray-500 border-gray-800 hover:border-gray-600 hover:text-gray-300'
                         }`}
                     >
                         {diff}
                     </button>
                 ))}
             </div>
-            <p className="text-xs text-blue-300 mt-3 h-4 font-medium transition-all duration-300">
-                {difficulty === 'easy' && "Enemy is slow and has poor vision."}
-                {difficulty === 'medium' && "Standard challenge. Stay quiet!"}
-                {difficulty === 'hard' && "Enemy is fast, smart, and hears everything."}
-            </p>
-        </div>
-
-        {/* Challenge Mode Toggle */}
-        <div className="mb-6 flex items-center justify-center gap-3">
-            <input 
-                type="checkbox" 
-                id="challengeMode" 
-                checked={challengeMode} 
-                onChange={(e) => setChallengeMode(e.target.checked)}
-                className="w-5 h-5 accent-red-600 cursor-pointer"
-            />
-            <label htmlFor="challengeMode" className="text-gray-300 font-bold cursor-pointer select-none">
-                CHALLENGE MODE (2x Enemies)
-            </label>
-        </div>
-        
-        <div className="space-y-3">
-            <button 
-              onClick={() => setGameState('playing')}
-              className="w-full bg-gradient-to-r from-blue-600 to-blue-700 hover:from-blue-500 hover:to-blue-600 text-white font-bold py-4 px-6 rounded-xl transition transform hover:scale-[1.02] shadow-lg border border-blue-500/30"
-            >
-              START GAME
-            </button>
             
+            {/* Challenge Mode */}
+            <div 
+                onClick={() => setChallengeMode(!challengeMode)}
+                className={`cursor-pointer w-full py-4 px-6 border transition-all duration-300 flex items-center justify-between group ${
+                    challengeMode 
+                    ? 'bg-red-900/10 border-red-900/50' 
+                    : 'bg-transparent border-transparent hover:bg-white/5'
+                }`}
+            >
+                <div className="flex flex-col text-left">
+                    <span className={`text-sm font-bold uppercase tracking-widest ${challengeMode ? 'text-red-500' : 'text-gray-500 group-hover:text-gray-300'}`}>Challenge Mode</span>
+                    <span className="text-[10px] text-gray-600 uppercase tracking-wider">Double Enemies • Double Fear</span>
+                </div>
+                <div className={`w-4 h-4 border ${challengeMode ? 'bg-red-600 border-red-600' : 'border-gray-600'} transition-colors`}></div>
+            </div>
+
+            {/* Settings Button */}
             <button 
               onClick={() => setShowSettings(true)}
-              className="w-full bg-gray-800 hover:bg-gray-700 text-gray-300 font-bold py-3 px-6 rounded-xl transition border border-gray-700"
+              className="w-full py-4 text-gray-500 hover:text-white text-xs font-bold uppercase tracking-[0.3em] transition-colors hover:bg-white/5"
             >
-              SETTINGS
+              Settings
             </button>
         </div>
-        
-        <div className="text-left text-gray-500 text-xs mt-8 bg-black/20 p-4 rounded-lg border border-white/5">
-          <p className="font-bold mb-2 text-gray-400 uppercase tracking-wider">Controls</p>
-          <div className="grid grid-cols-2 gap-2">
-            <span>WASD to Move</span>
-            <span>Mouse to Look</span>
-            <span>E to Interact</span>
-            <span>SHIFT to Sprint</span>
-            <span>C to Crouch</span>
-            <span>ESC to Pause</span>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-}
 
-function CaughtScreen() {
-  const reset = useGameStore((state) => state.reset);
-  
-  return (
-    <div className="absolute inset-0 bg-red-900/90 flex items-center justify-center z-50 animate-in fade-in duration-300">
-      <div className="text-center">
-        <h1 className="text-6xl font-black text-white mb-4 drop-shadow-lg">CAUGHT!</h1>
-        <p className="text-2xl text-red-200 mb-8">"GO TO YOUR ROOM!"</p>
-        <button 
-          onClick={reset}
-          className="bg-white text-red-900 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition transform hover:scale-110 shadow-xl"
-        >
-          Try Again
-        </button>
+        {/* Footer */}
+        <div className="absolute bottom-[-100px] text-gray-700 text-[10px] uppercase tracking-[0.5em]">
+            v2.1 • Build 2026
+        </div>
       </div>
     </div>
   );
@@ -233,6 +319,174 @@ function WinScreen() {
   );
 }
 
+function WarningScreen({ onAccept }: { onAccept: () => void }) {
+  return (
+    <div className="absolute inset-0 bg-black flex items-center justify-center z-[100] p-8 text-center">
+      <div className="max-w-3xl animate-in fade-in duration-1000 border-2 border-red-900/30 p-12 bg-black/80 backdrop-blur-sm shadow-[0_0_100px_rgba(255,0,0,0.1)]">
+        <h1 className="text-5xl font-black text-red-600 mb-8 uppercase tracking-[0.2em] border-b-2 border-red-900 pb-6 drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">
+          WARNING
+        </h1>
+        
+        <div className="space-y-6 text-gray-300 font-mono text-lg leading-relaxed">
+          <p>
+            This experience contains <span className="text-red-500 font-bold">intense flashing lights</span>, 
+            <span className="text-red-500 font-bold"> loud sudden noises</span>, and 
+            <span className="text-red-500 font-bold"> extreme jumpscares</span>.
+          </p>
+          
+          <p className="text-gray-400 italic">
+            It is not suitable for individuals with photosensitive epilepsy, heart conditions, or those who are easily frightened.
+          </p>
+
+          <p className="text-xl text-red-400 font-bold border-l-4 border-red-600 pl-4 py-2 my-8 bg-red-900/10">
+            This game is designed to <span className="text-red-500 uppercase tracking-widest">make you fear Goombas</span>.
+          </p>
+        </div>
+
+        <div className="mt-12">
+          <p className="text-sm text-gray-600 mb-4 uppercase tracking-widest">By continuing, you accept these terms</p>
+          <button 
+            onClick={onAccept}
+            className="bg-red-950 hover:bg-red-900 text-red-500 border border-red-800 font-bold py-4 px-16 transition-all duration-300 uppercase tracking-[0.15em] hover:scale-105 hover:shadow-[0_0_30px_rgba(255,0,0,0.3)] hover:text-red-400"
+          >
+            I Understand & Accept
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function JumpscareScreen() {
+  const reset = useGameStore((state) => state.reset);
+  const [show, setShow] = useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      reset();
+    }, 3000); // Increased to 3 seconds to let the player see it
+    return () => clearTimeout(timer);
+  }, [reset]);
+
+  return (
+    <div className="absolute inset-0 z-[100] overflow-hidden flex items-center justify-center bg-black">
+      {/* Flashing Background with Colors */}
+      <div 
+        className="absolute inset-0" 
+        style={{
+            animation: 'flashColors 0.1s infinite', // Slower flash
+            opacity: 0.8,
+        }}
+      />
+      
+      {/* Jumpscare Image - Erratic Movement */}
+      <div className="relative w-full h-full flex items-center justify-center">
+         {/* Wrapper for position movement */}
+         <div 
+            className="absolute inset-0 flex items-center justify-center"
+            style={{ animation: 'moveAround 0.4s infinite' }} // Slower movement (was 0.15s)
+         >
+             <img 
+                src="https://i.ibb.co/hRSfLyq9/2026-03-01-0tk-Kleki.png" 
+                alt="JUMPSCARE" 
+                className="w-[85vmin] h-[85vmin] object-contain drop-shadow-[0_0_50px_rgba(255,0,0,0.8)]"
+                style={{
+                    animation: 'zoomAndShake 0.5s infinite alternate', // Slower zoom/shake (was 0.2s)
+                }}
+             />
+         </div>
+      </div>
+      
+      <style>{`
+        @keyframes flashColors {
+            0% { background-color: #ff0000; }
+            20% { background-color: #000000; }
+            40% { background-color: #ffffff; }
+            60% { background-color: #0000ff; }
+            80% { background-color: #00ff00; }
+            100% { background-color: #ff0000; }
+        }
+        @keyframes moveAround {
+            0% { transform: translate(0, 0); }
+            20% { transform: translate(-10vw, 5vh); }
+            40% { transform: translate(10vw, -10vh); }
+            60% { transform: translate(-5vw, -5vh); }
+            80% { transform: translate(15vw, 10vh); }
+            100% { transform: translate(0, 0); }
+        }
+        @keyframes zoomAndShake {
+            0% { transform: scale(1) rotate(0deg); }
+            50% { transform: scale(1.3) rotate(-5deg); }
+            100% { transform: scale(1.1) rotate(5deg); }
+        }
+      `}</style>
+    </div>
+  );
+}
+
+function StoryScreen() {
+  const setGameState = useGameStore((state) => state.setGameState);
+  
+  return (
+    <div className="absolute inset-0 bg-black flex items-center justify-center z-50 animate-in fade-in duration-1000">
+      <div className="max-w-3xl p-12 text-center">
+        <h1 className="text-4xl font-black text-white mb-8 uppercase tracking-widest border-b border-white/20 pb-4">
+          The Report Card
+        </h1>
+        
+        <div className="space-y-6 text-xl text-gray-300 font-mono leading-relaxed text-left">
+          <p>
+            You are a <span className="text-blue-400 font-bold">Child Goomba</span>.
+          </p>
+          <p>
+            You came home with a <span className="text-red-500 font-bold">B+</span> in Stomping Class.
+          </p>
+          <p>
+            To your <span className="text-red-500 font-bold">Goomba Parents</span>, that is a FAILURE.
+            "No mushrooms. No jumping. No sunlight."
+          </p>
+          <p>
+            They locked you in the mansion to "study" until you become a <span className="text-red-500 font-bold">Doctor Goomba</span>.
+          </p>
+          <p className="text-red-400 italic">
+            Mom and Dad are patrolling the halls. They are very disappointed.
+          </p>
+          <p className="mt-8 font-bold text-white">
+            Escape the house. Don't let them catch you.
+          </p>
+        </div>
+
+        <button 
+          onClick={() => setGameState('playing')}
+          className="mt-12 bg-white text-black hover:bg-gray-200 font-bold py-4 px-12 uppercase tracking-widest transition-all hover:scale-105"
+        >
+          Begin Nightmare
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function DialogueBox({ name, text, image, visible }: { name: string, text: string, image: string, visible: boolean }) {
+  if (!visible) return null;
+
+  return (
+    <div className="absolute bottom-8 left-1/2 -translate-x-1/2 w-full max-w-3xl z-40 animate-in slide-in-from-bottom-10 fade-in duration-500 pointer-events-none">
+      <div className="bg-black/80 border-2 border-white/20 backdrop-blur-md p-4 flex items-center gap-6 rounded-xl shadow-2xl">
+        <div className="relative shrink-0">
+            <div className="w-24 h-24 bg-red-900/20 rounded-lg border border-red-500/30 overflow-hidden">
+                <img src={image} alt={name} className="w-full h-full object-cover" />
+            </div>
+        </div>
+        <div className="flex-1">
+            <h3 className="text-red-500 font-bold uppercase tracking-widest text-sm mb-1">{name}</h3>
+            <p className="text-white font-mono text-lg leading-snug">{text}</p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function App() {
   const gameState = useGameStore((state) => state.gameState);
   const setGameState = useGameStore((state) => state.setGameState);
@@ -241,6 +495,65 @@ export default function App() {
   const challengeMode = useGameStore((state) => state.challengeMode);
   const [dpr, setDpr] = useState(1.5);
   const [lowPerformance, setLowPerformance] = useState(false);
+  const [warningAccepted, setWarningAccepted] = useState(false);
+
+  // Dialogue System
+  const [dialogue, setDialogue] = useState<{name: string, text: string, image: string} | null>(null);
+  const [showDialogue, setShowDialogue] = useState(false);
+
+  useEffect(() => {
+    if (gameState !== 'playing') {
+        setShowDialogue(false);
+        return;
+    }
+
+    const parentNames = ["Dad Goomba", "Mom Goomba"];
+    const parentTexts = [
+        "Why only B+?",
+        "You bring shame to family!",
+        "Go study now!",
+        "No dinner until you become Doctor!",
+        "I hear you walking! Go back to room!",
+        "Do not disappoint us again.",
+        "Your cousin Koopa got an A++.",
+        "We sacrifice everything for you!",
+        "Where are you going? Study!",
+        "Calculus is easy! Why you struggle?",
+        "I will stomp YOU if you don't study!",
+        "You want to be a Minion forever?"
+    ];
+    const goombaImage = "https://i.ibb.co/hRSfLyq9/2026-03-01-0tk-Kleki.png"; // Use the scary one
+
+    const triggerDialogue = () => {
+        const name = parentNames[Math.floor(Math.random() * parentNames.length)];
+        const text = parentTexts[Math.floor(Math.random() * parentTexts.length)];
+        
+        setDialogue({ name, text, image: goombaImage });
+        setShowDialogue(true);
+
+        // Hide after 5 seconds
+        return setTimeout(() => {
+            setShowDialogue(false);
+        }, 5000);
+    };
+
+    let hideTimer: NodeJS.Timeout;
+
+    // Fixed interval of 20 seconds
+    const intervalId = setInterval(() => {
+        if (hideTimer) clearTimeout(hideTimer);
+        hideTimer = triggerDialogue();
+    }, 20000);
+
+    return () => {
+        clearInterval(intervalId);
+        if (hideTimer) clearTimeout(hideTimer);
+    };
+  }, [gameState]);
+
+  if (!warningAccepted) {
+      return <WarningScreen onAccept={() => setWarningAccepted(true)} />;
+  }
 
   return (
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
@@ -252,19 +565,13 @@ export default function App() {
                 onDecline={() => { setDpr(1); setLowPerformance(true); }}
             />
             
-            <Sky sunPosition={[100, 20, 100]} turbidity={0.5} rayleigh={0.5} mieCoefficient={0.005} mieDirectionalG={0.8} />
-            {!lowPerformance && <Stars radius={100} depth={50} count={5000} factor={4} saturation={0} fade speed={1} />}
-            <Environment preset="night" />
-            
-            <ambientLight intensity={0.1} />
+            <PlayerLight />
+
             {/* Reduced shadow map size for performance */}
             <pointLight position={[0, 4, 0]} intensity={0.5} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             <pointLight position={[0, 4, 10]} intensity={0.3} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             <pointLight position={[0, 4, 25]} intensity={0.5} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             
-            {/* Bake static shadows if possible, though we have dynamic lights */}
-            {/* <BakeShadows /> */}
-
             <Suspense fallback={null}>
               <House />
               {/* Main Enemy (1st Floor) */}
@@ -350,14 +657,20 @@ export default function App() {
       </div>
 
       {/* UI Layers */}
-      {gameState === 'playing' && <HUD />}
+      {gameState === 'playing' && (
+        <>
+            <HUD />
+            {dialogue && <DialogueBox name={dialogue.name} text={dialogue.text} image={dialogue.image} visible={showDialogue} />}
+        </>
+      )}
       {gameState === 'menu' && <Menu />}
+      {gameState === 'story' && <StoryScreen />}
       {gameState === 'laptop' && safeKeypadOpen && <SafeKeypad />}
       {gameState === 'laptop' && toolboxKeypadOpen && <ToolboxKeypad />}
       {gameState === 'laptop' && !safeKeypadOpen && !toolboxKeypadOpen && <Laptop />}
       {gameState === 'goomos' && <GoomOS />}
-      {gameState === 'caught' && <CaughtScreen />}
       {gameState === 'won' && <WinScreen />}
+      {gameState === 'jumpscare' && <JumpscareScreen />}
       <Loader />
     </div>
   );

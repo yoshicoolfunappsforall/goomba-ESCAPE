@@ -197,8 +197,13 @@ export function Player() {
     // Determine target Y based on current position (Floor Check)
     // 1st Floor: Y ~ 1.6
     // 2nd Floor: Y ~ 21.6
-    const onSecondFloor = camera.position.y > 10;
-    const targetY = onSecondFloor ? 21.6 : 1.6;
+    // Basement: Y ~ 51.6
+    let targetY = 1.6;
+    if (camera.position.y > 40) {
+        targetY = 51.6;
+    } else if (camera.position.y > 10) {
+        targetY = 21.6;
+    }
 
     // Calculate potential new position
     const moveForward = velocity.z * dt * currentSpeed;
@@ -372,8 +377,17 @@ export function Player() {
     const studyKeyPos = new THREE.Vector3(13, 1.1, 2);
     const distToStudyKey = camera.position.distanceTo(studyKeyPos);
 
-    // Shed Key is at [-20, 0.85, 5.5] (Study Desk)
-    const shedKeyPos = new THREE.Vector3(-20, 0.85, 5.5);
+    // Trapdoor in Master Bedroom at [-30, 0.1, 12]
+    const trapdoorPos = new THREE.Vector3(-30, 0.1, 12);
+    const distToTrapdoor = new THREE.Vector2(camera.position.x, camera.position.z).distanceTo(new THREE.Vector2(trapdoorPos.x, trapdoorPos.z));
+    const isNearTrapdoor = distToTrapdoor < 2.0 && Math.abs(camera.position.y - 1.6) < 2;
+
+    // Basement Ladder at [0, 51, 0]
+    const ladderPos = new THREE.Vector3(0, 51, 0);
+    const distToLadder = camera.position.distanceTo(ladderPos);
+
+    // Shed Key moved to Basement at [5, 52, 5] (On Box 1)
+    const shedKeyPos = new THREE.Vector3(5, 52, 5);
     const distToShedKey = camera.position.distanceTo(shedKeyPos);
 
     // Cabinet Key is at [-10, 21, 5] (Kid Room ToyBox)
@@ -677,9 +691,27 @@ export function Player() {
             KEYS.e = false;
         }
     } else if (distToShedKey < 3 && !inventory.includes('Shed Key')) {
-        setInteractionText('Press E to take Shed Key');
+        if (inventory.includes('Flashlight')) {
+            setInteractionText('Press E to take Shed Key');
+            if (KEYS.e) {
+                addToInventory('Shed Key');
+                KEYS.e = false;
+            }
+        } else {
+            setInteractionText('Too dark to see anything...');
+        }
+    } else if (isNearTrapdoor) {
+        setInteractionText('Press E to Enter Basement');
         if (KEYS.e) {
-            addToInventory('Shed Key');
+            camera.position.set(0, 51.6, 2); // Warp to Basement (Y=51.6)
+            lastValidPosition.current.copy(camera.position);
+            KEYS.e = false;
+        }
+    } else if (distToLadder < 3) {
+        setInteractionText('Press E to Climb Ladder');
+        if (KEYS.e) {
+            camera.position.set(-30, 1.6, 14); // Warp to Master Bedroom (slightly offset from wall)
+            lastValidPosition.current.copy(camera.position);
             KEYS.e = false;
         }
     } else if (distToCabinetKey < 3 && !inventory.includes('Cabinet Key')) {
