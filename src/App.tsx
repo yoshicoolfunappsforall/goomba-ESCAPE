@@ -55,6 +55,11 @@ function useAutoUiScale() {
       const width = window.innerWidth;
       const height = window.innerHeight;
       
+      if (width <= 768) {
+          setScale(1); // Don't scale on mobile, use responsive CSS instead
+          return;
+      }
+      
       // Target a smaller "safe area" to make UI elements larger
       // Lowering this value makes the UI bigger
       const targetWidth = 1000; 
@@ -67,7 +72,7 @@ function useAutoUiScale() {
       const newScale = Math.min(scaleX, scaleY);
       
       // Allow it to scale up quite a bit (2.5x) for large screens
-      // Minimum 0.6x for very small screens
+      // Minimum 0.6x for desktop screens
       setScale(Math.max(0.6, Math.min(newScale, 2.5)));
     };
     
@@ -86,33 +91,33 @@ function HUD() {
   const uiScale = useAutoUiScale();
   
   return (
-    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-8" style={{ transform: `scale(${uiScale})`, transformOrigin: 'top left', width: `${100/uiScale}%`, height: `${100/uiScale}%` }}>
+    <div className="absolute inset-0 pointer-events-none flex flex-col justify-between p-4 md:p-8" style={{ transform: `scale(${uiScale})`, transformOrigin: 'top left', width: `${100/uiScale}%`, height: `${100/uiScale}%` }}>
       <div className="flex justify-between items-start">
         <div className="bg-black/50 text-white p-2 rounded backdrop-blur-sm">
-          <h2 className="text-xl font-bold">Goomba Escape</h2>
-          <p className="text-sm text-gray-300">Find the code. Unlock the safe. Escape.</p>
+          <h2 className="text-base md:text-xl font-bold">Goomba Escape</h2>
+          <p className="text-xs md:text-sm text-gray-300">Find the code. Unlock the safe. Escape.</p>
         </div>
         
         {/* Inventory */}
         <div className="flex space-x-2">
             {inventory.map((item, i) => (
                 <div key={i} className="bg-black/50 p-2 rounded border border-white/20 backdrop-blur-sm flex items-center space-x-2 animate-in fade-in slide-in-from-right">
-                    <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-xs">
+                    <div className="w-6 h-6 md:w-8 md:h-8 bg-blue-600 rounded-full flex items-center justify-center text-[10px] md:text-xs">
                         {item === 'House Key' ? '🔑' : item === 'Storage Key' ? '🗝️' : item === 'Flashlight' ? '🔦' : item === 'Screwdriver' ? '🔧' : '📦'}
                     </div>
-                    <span className="text-white text-sm font-bold">{item}</span>
+                    <span className="text-white text-xs md:text-sm font-bold hidden md:inline-block">{item}</span>
                 </div>
             ))}
         </div>
       </div>
       
       {interactionText && (
-        <div className="self-center bg-black/70 text-white px-6 py-3 rounded-full text-lg font-bold animate-pulse backdrop-blur-md border border-white/20">
+        <div className="self-center bg-black/70 text-white px-4 md:px-6 py-2 md:py-3 rounded-full text-sm md:text-lg font-bold animate-pulse backdrop-blur-md border border-white/20 mb-16 md:mb-0">
           {interactionText}
         </div>
       )}
       
-      <div className="text-white/50 text-sm self-end">
+      <div className="text-white/50 text-[10px] md:text-sm self-end hidden md:block">
         WASD to Move • Mouse to Look • E to Interact • ESC to Pause
       </div>
     </div>
@@ -161,20 +166,20 @@ function Menu() {
   
   if (showSettings) {
       return (
-        <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 backdrop-blur-md">
+        <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 backdrop-blur-md p-4">
           <div 
-            className="bg-gray-900/80 p-12 rounded-none border border-gray-800 shadow-2xl max-w-2xl w-full text-center animate-in fade-in zoom-in duration-300 relative overflow-hidden"
+            className="bg-gray-900/80 p-6 md:p-12 rounded-none border border-gray-800 shadow-2xl max-w-2xl w-full text-center animate-in fade-in zoom-in duration-300 relative overflow-hidden"
             style={{ transform: `scale(${uiScale})` }}
           >
             {/* Decorative Lines */}
             <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-900 to-transparent opacity-50"></div>
             <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-blue-900 to-transparent opacity-50"></div>
 
-            <h2 className="text-4xl font-black text-white mb-12 tracking-[0.2em] uppercase border-b border-gray-800 pb-4">Settings</h2>
+            <h2 className="text-2xl md:text-4xl font-black text-white mb-8 md:mb-12 tracking-[0.2em] uppercase border-b border-gray-800 pb-4">Settings</h2>
             
-            <div className="space-y-10 text-left px-8">
+            <div className="space-y-8 md:space-y-10 text-left px-2 md:px-8">
                 <div className="group">
-                    <label className="block text-gray-400 text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Mouse Sensitivity: <span className="text-white ml-2">{sensitivity.toFixed(1)}</span></label>
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Mouse Sensitivity: <span className="text-white ml-2">{sensitivity.toFixed(1)}</span></label>
                     <input 
                         type="range" 
                         min="0.1" 
@@ -187,7 +192,7 @@ function Menu() {
                 </div>
                 
                 <div className="group">
-                    <label className="block text-gray-400 text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Volume: <span className="text-white ml-2">{(volume * 100).toFixed(0)}%</span></label>
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Volume: <span className="text-white ml-2">{(volume * 100).toFixed(0)}%</span></label>
                     <input 
                         type="range" 
                         min="0" 
@@ -202,7 +207,7 @@ function Menu() {
 
             <button 
               onClick={() => setShowSettings(false)}
-              className="mt-16 w-full bg-transparent hover:bg-white/5 text-gray-400 hover:text-white font-bold py-4 px-6 border border-gray-700 hover:border-gray-500 transition-all duration-300 uppercase tracking-widest text-sm"
+              className="mt-12 md:mt-16 w-full bg-transparent hover:bg-white/5 text-gray-400 hover:text-white font-bold py-3 md:py-4 px-6 border border-gray-700 hover:border-gray-500 transition-all duration-300 uppercase tracking-widest text-xs md:text-sm"
             >
               Return to Menu
             </button>
@@ -212,34 +217,34 @@ function Menu() {
   }
 
   return (
-    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm">
+    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
       <div 
         className="relative w-full max-w-4xl flex flex-col items-center"
         style={{ transform: `scale(${uiScale})` }}
       >
         
         {/* Title Section */}
-        <div className="mb-16 text-center relative">
-            <h1 className="text-8xl font-black text-white mb-2 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+        <div className="mb-8 md:mb-16 text-center relative">
+            <h1 className="text-6xl md:text-8xl font-black text-white mb-2 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
                 GOOMBA
             </h1>
-            <h1 className="text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-600 to-red-900 tracking-tighter relative -mt-4">
+            <h1 className="text-6xl md:text-8xl font-black text-transparent bg-clip-text bg-gradient-to-b from-red-600 to-red-900 tracking-tighter relative -mt-2 md:-mt-4">
                 ESCAPE
             </h1>
-            <div className="absolute -right-12 top-0 rotate-12 bg-yellow-500 text-black font-bold px-3 py-1 text-xs uppercase tracking-widest shadow-lg transform hover:scale-110 transition-transform cursor-default animate-pulse">
+            <div className="absolute -right-4 md:-right-12 top-0 rotate-12 bg-yellow-500 text-black font-bold px-2 py-1 md:px-3 md:py-1 text-[10px] md:text-xs uppercase tracking-widest shadow-lg transform hover:scale-110 transition-transform cursor-default animate-pulse">
                 {splashText}
             </div>
         </div>
         
         {/* Menu Items */}
-        <div className="w-full max-w-md space-y-4 relative z-10">
+        <div className="w-full max-w-md space-y-3 md:space-y-4 relative z-10 px-4 md:px-0">
             
             {/* Play Button */}
             <button 
               onClick={() => setGameState('story')}
-              className="group w-full bg-white/5 hover:bg-red-900/20 backdrop-blur-md border border-white/10 hover:border-red-500/50 text-white font-bold py-6 px-8 transition-all duration-300 transform hover:scale-105 hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] flex items-center justify-between"
+              className="group w-full bg-white/5 hover:bg-red-900/20 backdrop-blur-md border border-white/10 hover:border-red-500/50 text-white font-bold py-4 md:py-6 px-6 md:px-8 transition-all duration-300 transform hover:scale-105 hover:shadow-[0_0_30px_rgba(220,38,38,0.2)] flex items-center justify-between"
             >
-              <span className="text-xl tracking-[0.2em] uppercase group-hover:text-red-500 transition-colors">Start Game</span>
+              <span className="text-lg md:text-xl tracking-[0.2em] uppercase group-hover:text-red-500 transition-colors">Start Game</span>
               <span className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500">►</span>
             </button>
 
@@ -296,22 +301,26 @@ function Menu() {
 
 function WinScreen() {
   const reset = useGameStore((state) => state.reset);
+  const uiScale = useAutoUiScale();
   
   return (
-    <div className="absolute inset-0 bg-green-900/90 flex items-center justify-center z-50 animate-in fade-in duration-1000">
-      <div className="text-center max-w-2xl p-8">
-        <h1 className="text-6xl font-black text-white mb-4 drop-shadow-lg">ESCAPED!</h1>
-        <div className="flex justify-center mb-8">
+    <div className="absolute inset-0 bg-green-900/90 flex items-center justify-center z-50 animate-in fade-in duration-1000 p-4">
+      <div 
+        className="text-center max-w-2xl p-6 md:p-8 bg-black/30 backdrop-blur-sm rounded-3xl border border-green-500/30"
+        style={{ transform: `scale(${uiScale})` }}
+      >
+        <h1 className="text-4xl md:text-6xl font-black text-white mb-4 drop-shadow-lg">ESCAPED!</h1>
+        <div className="flex justify-center mb-6 md:mb-8">
             <img 
                 src="https://i.ibb.co/ZzBBDd8c/Koopa-Troopa.webp" 
                 alt="Jeremy" 
-                className="h-48 object-contain drop-shadow-2xl animate-bounce"
+                className="h-32 md:h-48 object-contain drop-shadow-2xl animate-bounce"
             />
         </div>
-        <p className="text-2xl text-green-200 mb-8">You found Jeremy! Let's play!</p>
+        <p className="text-xl md:text-2xl text-green-200 mb-6 md:mb-8">You found Jeremy! Let's play!</p>
         <button 
           onClick={reset}
-          className="bg-white text-green-900 font-bold py-3 px-8 rounded-full hover:bg-gray-200 transition transform hover:scale-110 shadow-xl"
+          className="bg-white text-green-900 font-bold py-3 md:py-4 px-6 md:px-8 rounded-full hover:bg-gray-200 transition transform hover:scale-110 shadow-xl w-full md:w-auto text-sm md:text-base"
         >
           Play Again
         </button>
@@ -321,14 +330,18 @@ function WinScreen() {
 }
 
 function WarningScreen({ onAccept }: { onAccept: () => void }) {
+  const uiScale = useAutoUiScale();
   return (
     <div className="absolute inset-0 bg-black flex items-center justify-center z-[100] p-8 text-center">
-      <div className="max-w-3xl animate-in fade-in duration-1000 border-2 border-red-900/30 p-12 bg-black/80 backdrop-blur-sm shadow-[0_0_100px_rgba(255,0,0,0.1)]">
-        <h1 className="text-5xl font-black text-red-600 mb-8 uppercase tracking-[0.2em] border-b-2 border-red-900 pb-6 drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">
+      <div 
+        className="max-w-3xl animate-in fade-in duration-1000 border-2 border-red-900/30 p-12 bg-black/80 backdrop-blur-sm shadow-[0_0_100px_rgba(255,0,0,0.1)]"
+        style={{ transform: `scale(${uiScale})` }}
+      >
+        <h1 className="text-3xl md:text-5xl font-black text-red-600 mb-4 md:mb-8 uppercase tracking-[0.2em] border-b-2 border-red-900 pb-4 md:pb-6 drop-shadow-[0_0_10px_rgba(255,0,0,0.5)]">
           WARNING
         </h1>
         
-        <div className="space-y-6 text-gray-300 font-mono text-lg leading-relaxed">
+        <div className="space-y-4 md:space-y-6 text-gray-300 font-mono text-sm md:text-lg leading-relaxed">
           <p>
             This experience contains <span className="text-red-500 font-bold">intense flashing lights</span>, 
             <span className="text-red-500 font-bold"> loud sudden noises</span>, and 
@@ -339,16 +352,16 @@ function WarningScreen({ onAccept }: { onAccept: () => void }) {
             It is not suitable for individuals with photosensitive epilepsy, heart conditions, or those who are easily frightened.
           </p>
 
-          <p className="text-xl text-red-400 font-bold border-l-4 border-red-600 pl-4 py-2 my-8 bg-red-900/10">
+          <p className="text-base md:text-xl text-red-400 font-bold border-l-4 border-red-600 pl-4 py-2 my-4 md:my-8 bg-red-900/10">
             This game is designed to <span className="text-red-500 uppercase tracking-widest">make you fear Goombas</span>.
           </p>
         </div>
 
-        <div className="mt-12">
-          <p className="text-sm text-gray-600 mb-4 uppercase tracking-widest">By continuing, you accept these terms</p>
+        <div className="mt-8 md:mt-12">
+          <p className="text-xs md:text-sm text-gray-600 mb-4 uppercase tracking-widest">By continuing, you accept these terms</p>
           <button 
             onClick={onAccept}
-            className="bg-red-950 hover:bg-red-900 text-red-500 border border-red-800 font-bold py-4 px-16 transition-all duration-300 uppercase tracking-[0.15em] hover:scale-105 hover:shadow-[0_0_30px_rgba(255,0,0,0.3)] hover:text-red-400"
+            className="bg-red-950 hover:bg-red-900 text-red-500 border border-red-800 font-bold py-3 md:py-4 px-8 md:px-16 transition-all duration-300 uppercase tracking-[0.15em] hover:scale-105 hover:shadow-[0_0_30px_rgba(255,0,0,0.3)] hover:text-red-400 text-sm md:text-base w-full md:w-auto"
           >
             I Understand & Accept
           </button>
@@ -427,15 +440,19 @@ function JumpscareScreen() {
 
 function StoryScreen() {
   const setGameState = useGameStore((state) => state.setGameState);
+  const uiScale = useAutoUiScale();
   
   return (
-    <div className="absolute inset-0 bg-black flex items-center justify-center z-50 animate-in fade-in duration-1000">
-      <div className="max-w-3xl p-12 text-center">
-        <h1 className="text-4xl font-black text-white mb-8 uppercase tracking-widest border-b border-white/20 pb-4">
+    <div className="absolute inset-0 bg-black flex items-center justify-center z-50 animate-in fade-in duration-1000 p-4">
+      <div 
+        className="max-w-3xl p-6 md:p-12 text-center bg-black/80 backdrop-blur-sm border border-white/10"
+        style={{ transform: `scale(${uiScale})` }}
+      >
+        <h1 className="text-2xl md:text-4xl font-black text-white mb-6 md:mb-8 uppercase tracking-widest border-b border-white/20 pb-4">
           The Report Card
         </h1>
         
-        <div className="space-y-6 text-xl text-gray-300 font-mono leading-relaxed text-left">
+        <div className="space-y-4 md:space-y-6 text-base md:text-xl text-gray-300 font-mono leading-relaxed text-left">
           <p>
             You are a <span className="text-blue-400 font-bold">Child Goomba</span>.
           </p>
@@ -452,14 +469,14 @@ function StoryScreen() {
           <p className="text-red-400 italic">
             Mom and Dad are patrolling the halls. They are very disappointed.
           </p>
-          <p className="mt-8 font-bold text-white">
+          <p className="mt-6 md:mt-8 font-bold text-white">
             Escape the house. Don't let them catch you.
           </p>
         </div>
 
         <button 
           onClick={() => setGameState('playing')}
-          className="mt-12 bg-white text-black hover:bg-gray-200 font-bold py-4 px-12 uppercase tracking-widest transition-all hover:scale-105"
+          className="mt-8 md:mt-12 bg-white text-black hover:bg-gray-200 font-bold py-3 md:py-4 px-8 md:px-12 uppercase tracking-widest transition-all hover:scale-105 w-full md:w-auto text-sm md:text-base"
         >
           Begin Nightmare
         </button>
