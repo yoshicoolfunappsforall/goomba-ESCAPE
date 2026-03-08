@@ -168,19 +168,30 @@ export function Player() {
   useFrame((state, delta) => {
     if (useGameStore.getState().gameState !== 'playing') return;
 
+    const gameStoreState = useGameStore.getState();
+    const interactPressed = KEYS.e || gameStoreState.mobileInteract;
+    const consumeInteract = () => {
+        consumeInteract();
+        gameStoreState.setMobileInteract(false);
+    };
+
     // Clamp delta to prevent huge jumps on lag (max 0.1s)
     const dt = Math.min(delta, 0.1);
-    const inventory = useGameStore.getState().inventory;
-    const isHiding = useGameStore.getState().isHiding;
+    const inventory = gameStoreState.inventory;
+    const isHiding = gameStoreState.isHiding;
+    const mobileMovement = gameStoreState.mobileMovement;
 
     // Movement Logic
     if (!isHiding) {
-        direction.z = Number(KEYS.s) - Number(KEYS.w);
-        direction.x = Number(KEYS.a) - Number(KEYS.d);
-        direction.normalize();
+        direction.z = Number(KEYS.s) - Number(KEYS.w) + mobileMovement.y;
+        direction.x = Number(KEYS.a) - Number(KEYS.d) - mobileMovement.x;
+        
+        if (direction.lengthSq() > 1) {
+            direction.normalize();
+        }
 
-        if (KEYS.w || KEYS.s) velocity.z -= direction.z * 60.0 * dt;
-        if (KEYS.a || KEYS.d) velocity.x -= direction.x * 60.0 * dt;
+        if (KEYS.w || KEYS.s || mobileMovement.y !== 0) velocity.z -= direction.z * 60.0 * dt;
+        if (KEYS.a || KEYS.d || mobileMovement.x !== 0) velocity.x -= direction.x * 60.0 * dt;
     } else {
         // Stop movement if hiding
         velocity.set(0, 0, 0);
@@ -451,11 +462,11 @@ export function Player() {
 
     if (isHiding) {
         setInteractionText('Press E to Stop Hiding');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(false);
             // Move player out slightly so they don't get stuck or hide immediately again
             camera.position.y = 1.6;
-            KEYS.e = false;
+            consumeInteract();
         }
         // Force crouch
         camera.position.y = 0.5;
@@ -464,42 +475,42 @@ export function Player() {
 
     if (distToLaptop < 3) {
       setInteractionText('Press E to use Laptop');
-      if (KEYS.e) { 
+      if (interactPressed) { 
          setGameState('laptop');
-         KEYS.e = false; 
+         consumeInteract(); 
       }
     } else if (distToBedroomDoor < 3) {
         setInteractionText(bedroomDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setBedroomDoorOpen(!bedroomDoorOpen);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToBathroomDoor < 3) {
         setInteractionText(bathroomDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setBathroomDoorOpen(!bathroomDoorOpen);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToMasterBedroomDoor < 3) {
         const isOpen = useGameStore.getState().masterBedroomDoorOpen;
         setInteractionText(isOpen ? 'Press E to Close Door' : 'Press E to Open Door');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setMasterBedroomDoorOpen(!isOpen);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToRadio < 2) {
         setInteractionText(radioOn ? 'Press E to Turn Off Radio' : 'Press E to Turn On Radio');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setRadioOn(!radioOn);
             useGameStore.getState().setNoiseLevel(radioOn ? 0 : 80); // High noise if on
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToTV < 3) {
         setInteractionText(tvOn ? 'Press E to Turn Off TV' : 'Press E to Turn On TV');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setTvOn(!tvOn);
             useGameStore.getState().setNoiseLevel(tvOn ? 0 : 90); // TV is louder
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToToolbox < 2) {
         // Toolbox is empty now, maybe just a distraction or bonus?
@@ -507,19 +518,19 @@ export function Player() {
              setInteractionText('Toolbox is open. Empty.');
         } else {
              setInteractionText('Press E to Unlock Toolbox');
-             if (KEYS.e) {
+             if (interactPressed) {
                  useGameStore.getState().setToolboxKeypadOpen(true);
                  setGameState('laptop'); // Pause game/show cursor
-                 KEYS.e = false;
+                 consumeInteract();
              }
         }
     } else if (distToLockedCabinet < 2.5) {
         if (cabinetOpen) {
             if (!inventory.includes('Flashlight')) {
                 setInteractionText('Press E to take Flashlight');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('Flashlight');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Cabinet is empty.');
@@ -527,9 +538,9 @@ export function Player() {
         } else {
             if (inventory.includes('Cabinet Key')) {
                 setInteractionText('Press E to Unlock Cabinet');
-                if (KEYS.e) {
+                if (interactPressed) {
                     useGameStore.getState().setCabinetOpen(true);
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Cabinet is Locked. Need Cabinet Key.');
@@ -537,35 +548,35 @@ export function Player() {
         }
     } else if (distToUnderBed < 2.5) {
         setInteractionText('Press E to Hide Under Bed');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToUnderMasterBed < 2.5) {
         setInteractionText('Press E to Hide Under Bed');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToWardrobe < 2.5) {
         setInteractionText('Press E to Hide in Wardrobe');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToCabinet < 2.5) {
         setInteractionText('Press E to Hide in Cabinet');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToFrontDoor < 3) {
         if (inventory.includes('House Key')) {
              setInteractionText('Press E to Go Outside');
-             if (KEYS.e) {
+             if (interactPressed) {
                  camera.position.set(0, 1.6, 40);
                  lastValidPosition.current.copy(camera.position);
-                 KEYS.e = false;
+                 consumeInteract();
              }
         } else {
              setInteractionText('Door is Locked. Need House Key.');
@@ -573,9 +584,9 @@ export function Player() {
     } else if (distToGate < 4) {
         if (inventory.includes('Gate Key')) {
              setInteractionText('Press E to Escape!');
-             if (KEYS.e) {
+             if (interactPressed) {
                  setGameState('won');
-                 KEYS.e = false;
+                 consumeInteract();
              }
         } else {
              setInteractionText('Gate is Locked. Need Gate Key.');
@@ -584,10 +595,10 @@ export function Player() {
         if (inventory.includes('Shed Key')) {
             if (!inventory.includes('Gate Key')) {
                 setInteractionText('Press E to Search Shed');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('Gate Key');
                     setInteractionText('Found Gate Key!');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Shed is empty.');
@@ -597,39 +608,39 @@ export function Player() {
         }
     } else if (distToDogHouse < 2.5) {
         setInteractionText('Press E to Hide in Dog House');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToBigBush < 2.5) {
         setInteractionText('Press E to Hide in Bush');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setIsHiding(true);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToSecretNote < 3 && !inventory.includes('Secret Note')) {
         setInteractionText('Press E to read Secret Note');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Secret Note');
             setInteractionText('Note says: "I hid the Cabinet Key under the Living Room Rug!"');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToToolbox < 2.5) {
         if (toolboxOpen) {
             if (!inventory.includes('Screwdriver')) {
                 setInteractionText('Press E to take Screwdriver');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('Screwdriver');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Toolbox is empty.');
             }
         } else {
             setInteractionText('Press E to Open Toolbox');
-            if (KEYS.e) {
+            if (interactPressed) {
                 setToolboxOpen(true);
-                KEYS.e = false;
+                consumeInteract();
             }
         }
     } else if (distToArcade < 2.5) {
@@ -638,10 +649,10 @@ export function Player() {
         } else {
             if (inventory.includes('Arcade Coin')) {
                 setInteractionText('Press E to Insert Coin');
-                if (KEYS.e) {
+                if (interactPressed) {
                     setArcadeScoreKnown(true);
                     setInteractionText('High Score: 5932');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Insert Coin to Play');
@@ -649,25 +660,25 @@ export function Player() {
         }
     } else if (distToCoin < 2 && !inventory.includes('Arcade Coin')) {
         setInteractionText('Press E to take Arcade Coin');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Arcade Coin');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToLibrarySafe < 2.5) {
         if (librarySafeOpen) {
             if (!inventory.includes('Gate Key')) {
                 setInteractionText('Press E to take Gate Key');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('Gate Key');
                     setGateKey(true);
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Safe is empty.');
             }
         } else {
             setInteractionText('Press E to Enter Code (4 digits)');
-            if (KEYS.e) {
+            if (interactPressed) {
                 const code = prompt('Enter Safe Code:');
                 if (code === '5932') {
                     setLibrarySafeOpen(true);
@@ -675,57 +686,57 @@ export function Player() {
                 } else {
                     alert('Wrong Code!');
                 }
-                KEYS.e = false;
+                consumeInteract();
             }
         }
     } else if (distToCrowbar < 3 && !inventory.includes('Crowbar')) {
         setInteractionText('Press E to take Crowbar');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Crowbar');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToComputer < 3) {
         setInteractionText('Press E to use GoomOS Computer');
-        if (KEYS.e) {
+        if (interactPressed) {
             setGameState('goomos');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToShedKey < 3 && !inventory.includes('Shed Key')) {
         if (inventory.includes('Flashlight')) {
             setInteractionText('Press E to take Shed Key');
-            if (KEYS.e) {
+            if (interactPressed) {
                 addToInventory('Shed Key');
-                KEYS.e = false;
+                consumeInteract();
             }
         } else {
             setInteractionText('Too dark to see anything...');
         }
     } else if (isNearTrapdoor) {
         setInteractionText('Press E to Enter Basement');
-        if (KEYS.e) {
+        if (interactPressed) {
             camera.position.set(0, 51.6, 2); // Warp to Basement (Y=51.6)
             lastValidPosition.current.copy(camera.position);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToLadder < 3) {
         setInteractionText('Press E to Climb Ladder');
-        if (KEYS.e) {
+        if (interactPressed) {
             camera.position.set(-30, 1.6, 14); // Warp to Master Bedroom (slightly offset from wall)
             lastValidPosition.current.copy(camera.position);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToCabinetKey < 3 && !inventory.includes('Cabinet Key')) {
         setInteractionText('Press E to take Cabinet Key');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Cabinet Key');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToToolbox < 3 && !toolboxOpen) {
         if (toolboxCodeKnown) {
              setInteractionText('Press E to unlock Toolbox (Code: 7-2-4)');
-             if (KEYS.e) {
+             if (interactPressed) {
                  useGameStore.getState().setToolboxOpen(true);
-                 KEYS.e = false;
+                 consumeInteract();
              }
         } else {
             setInteractionText('Toolbox is locked. Need combination.');
@@ -736,9 +747,9 @@ export function Player() {
         } else {
             if (inventory.includes('Storage Key')) {
                 setInteractionText('Press E to unlock Storage Room');
-                if (KEYS.e) {
+                if (interactPressed) {
                     useGameStore.getState().setStorageOpen(true);
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Locked. Need Storage Key.');
@@ -748,17 +759,17 @@ export function Player() {
         if (ventOpen) {
             if (!inventory.includes('House Key')) {
                 setInteractionText('Press E to take House Key');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('House Key');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             }
         } else {
             if (inventory.includes('Screwdriver')) {
                 setInteractionText('Press E to unscrew Vent');
-                if (KEYS.e) {
+                if (interactPressed) {
                     useGameStore.getState().setVentOpen(true);
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Vent is screwed shut. Need Screwdriver.');
@@ -768,46 +779,46 @@ export function Player() {
         if (safeOpen) {
             if (!inventory.includes('Storage Key')) {
                 setInteractionText('Press E to take Storage Key');
-                if (KEYS.e) {
+                if (interactPressed) {
                     addToInventory('Storage Key');
-                    KEYS.e = false;
+                    consumeInteract();
                 }
             } else {
                 setInteractionText('Empty Safe');
             }
         } else {
             setInteractionText('Press E to Unlock Safe');
-            if (KEYS.e) {
+            if (interactPressed) {
                 useGameStore.getState().setSafeKeypadOpen(true);
                 setGameState('laptop'); // Re-use 'laptop' state to unlock cursor/pause game
-                KEYS.e = false;
+                consumeInteract();
             }
         }
     } else if (distToGuestDoor < 3) {
         setInteractionText(guestDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setGuestDoorOpen(!guestDoorOpen);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToDiningDoor < 3) {
         setInteractionText(diningDoorOpen ? 'Press E to Close Door' : 'Press E to Open Door');
-        if (KEYS.e) {
+        if (interactPressed) {
             useGameStore.getState().setDiningDoorOpen(!diningDoorOpen);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToStudyDoor < 3) {
         if (studyDoorOpen) {
              setInteractionText('Press E to Close Door');
-             if (KEYS.e) {
+             if (interactPressed) {
                  useGameStore.getState().setStudyDoorOpen(false);
-                 KEYS.e = false;
+                 consumeInteract();
              }
         } else {
              if (inventory.includes('Study Key')) {
                  setInteractionText('Press E to Open Door');
-                 if (KEYS.e) {
+                 if (interactPressed) {
                      useGameStore.getState().setStudyDoorOpen(true);
-                     KEYS.e = false;
+                     consumeInteract();
                  }
              } else {
                  setInteractionText('Locked. Need Study Key.');
@@ -815,46 +826,46 @@ export function Player() {
         }
     } else if (distToStudyKey < 3 && !inventory.includes('Study Key')) {
         setInteractionText('Press E to take Study Key');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Study Key');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToSafeCode < 3 && !inventory.includes('Safe Code')) {
         setInteractionText('Press E to take Note (Safe Code)');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Safe Code');
             setInteractionText('Found Safe Code: 1-9-9-6');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToBattery < 3 && !inventory.includes('Battery')) {
         setInteractionText('Press E to take Battery');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Battery');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (distToEnergyDrink < 3 && !inventory.includes('Energy Drink')) {
         setInteractionText('Press E to drink Energy Drink (Speed Boost)');
-        if (KEYS.e) {
+        if (interactPressed) {
             addToInventory('Energy Drink');
             // Apply speed boost? For now just inventory item.
             // Maybe set a state for speed boost.
             // Let's just say "You feel energized!"
             setInteractionText('You feel energized! (Speed Boost)');
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (isNearTelePad1) {
         setInteractionText('Press E to Teleport to 2nd Floor');
-        if (KEYS.e) {
+        if (interactPressed) {
             camera.position.set(0, 21.6, 0); // Teleport to 2nd Floor
             lastValidPosition.current.copy(camera.position);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else if (isNearTelePad2) {
         setInteractionText('Press E to Teleport to 1st Floor');
-        if (KEYS.e) {
+        if (interactPressed) {
             camera.position.set(0, 1.6, 18); // Teleport to 1st Floor
             lastValidPosition.current.copy(camera.position);
-            KEYS.e = false;
+            consumeInteract();
         }
     } else {
       setInteractionText(null);

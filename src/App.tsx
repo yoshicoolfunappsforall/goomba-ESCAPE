@@ -11,6 +11,7 @@ import { House } from './components/World/House';
 import { Player } from './components/World/Player';
 import { Enemy } from './components/World/Enemy';
 import { Controls } from './components/World/Controls';
+import { MobileControls } from './components/UI/MobileControls';
 
 import { GoomOS } from './components/UI/GoomOS';
 import { useThree, useFrame } from '@react-three/fiber';
@@ -660,6 +661,7 @@ export default function App() {
       {gameState === 'playing' && (
         <>
             <HUD />
+            <MobileControls />
             {dialogue && <DialogueBox name={dialogue.name} text={dialogue.text} image={dialogue.image} visible={showDialogue} />}
         </>
       )}

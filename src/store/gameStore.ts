@@ -46,6 +46,13 @@ interface GameState {
   gateKey: boolean;
   setGateKey: (has: boolean) => void;
   
+  isMobile: boolean;
+  setIsMobile: (isMobile: boolean) => void;
+  mobileMovement: { x: number, y: number };
+  setMobileMovement: (movement: { x: number, y: number }) => void;
+  mobileInteract: boolean;
+  setMobileInteract: (interact: boolean) => void;
+  
   // Settings
   sensitivity: number;
   setSensitivity: (val: number) => void;
@@ -116,6 +123,13 @@ export const useGameStore = create<GameState>((set) => ({
   setArcadeScoreKnown: (known) => set({ arcadeScoreKnown: known }),
   gateKey: false,
   setGateKey: (has) => set({ gateKey: has }),
+  
+  isMobile: false,
+  setIsMobile: (isMobile) => set({ isMobile }),
+  mobileMovement: { x: 0, y: 0 },
+  setMobileMovement: (movement) => set({ mobileMovement: movement }),
+  mobileInteract: false,
+  setMobileInteract: (interact) => set({ mobileInteract: interact }),
   
   sensitivity: 1,
   setSensitivity: (val) => set({ sensitivity: val }),
