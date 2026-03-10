@@ -2,23 +2,84 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { useRef, useState, useEffect } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { WALLS, FURNITURE, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
 
 const SPEED = 6;
 const PLAYER_RADIUS = 0.3;
 const KEYS = { w: false, a: false, s: false, d: false, e: false };
 
+const PRECOMPUTED_COLLIDERS = (() => {
+    const colliders: { minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number }[] = [];
+    
+    // Walls
+    const allWalls = [...WALLS, ...WALLS_2ND_FLOOR_FINAL];
+    for (const wall of allWalls) {
+      const wallPos = new THREE.Vector3(...wall.position);
+      const wallSize = new THREE.Vector3(...wall.size);
+      const rotation = wall.rotation ? wall.rotation[1] : 0;
+      
+      let width = wallSize.x;
+      let depth = wallSize.z;
+
+      if (Math.abs(rotation - Math.PI / 2) < 0.1) {
+        width = wallSize.z;
+        depth = wallSize.x;
+      }
+
+      const minY = wallPos.y - wallSize.y / 2;
+      const maxY = wallPos.y + wallSize.y / 2;
+      const minX = wallPos.x - width / 2;
+      const maxX = wallPos.x + width / 2;
+      const minZ = wallPos.z - depth / 2;
+      const maxZ = wallPos.z + depth / 2;
+
+      colliders.push({ minX, maxX, minY, maxY, minZ, maxZ });
+    }
+
+    // Furniture
+    const allFurniture = [...FURNITURE, ...FURNITURE_2ND_FLOOR];
+    for (const item of allFurniture) {
+      if (['Rug', 'LivingRug', 'Poster', 'CeilingLight', 'UnderBed', 'UnderMasterBed', 'Plant', 'Lamp', 'Book', 'ToiletPaper', 'PlayRug', 'TeleportPad2'].includes(item.name)) continue;
+
+      const pos = new THREE.Vector3(...item.position);
+      const size = new THREE.Vector3(...item.size);
+      
+      const minY = pos.y - size.y / 2;
+      const maxY = pos.y + size.y / 2;
+      const minX = pos.x - size.x / 2;
+      const maxX = pos.x + size.x / 2;
+      const minZ = pos.z - size.z / 2;
+      const maxZ = pos.z + size.z / 2;
+
+      colliders.push({ minX, maxX, minY, maxY, minZ, maxZ });
+    }
+    
+    return colliders;
+})();
+
 export function Player() {
   const { camera } = useThree();
-  const setGameState = useGameStore((state) => state.setGameState);
+  const { setGameState, fov, headBobbing } = useGameStore(useShallow(state => ({
+    setGameState: state.setGameState,
+    fov: state.fov,
+    headBobbing: state.headBobbing
+  })));
   const [velocity] = useState(new THREE.Vector3());
   const [direction] = useState(new THREE.Vector3());
   const lastValidPosition = useRef(new THREE.Vector3(0, 1.6, 0));
 
   useEffect(() => {
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
+  }, [fov, camera]);
+
+  useEffect(() => {
     // Reset camera position on mount
     camera.position.set(0, 1.6, 0);
     camera.rotation.set(0, 0, 0);
+    camera.fov = fov;
+    camera.updateProjectionMatrix();
 
     // Reset keys on mount
     KEYS.w = false;
@@ -56,72 +117,17 @@ export function Player() {
 
   // Helper to check collision with a box
   const checkCollision = (newPos: THREE.Vector3) => {
-    // Check Walls
-    const allWalls = [...WALLS, ...WALLS_2ND_FLOOR_FINAL];
-    for (const wall of allWalls) {
-      const wallPos = new THREE.Vector3(...wall.position);
-      const wallSize = new THREE.Vector3(...wall.size);
-      const rotation = wall.rotation ? wall.rotation[1] : 0;
+    const playerBottom = newPos.y - 1.5;
+    const playerTop = newPos.y + 0.2;
 
-      // Simple AABB check doesn't work well with rotation.
-      // For this specific level, rotations are only 0 or 90 degrees (PI/2).
-      // We can swap width/depth if rotated.
-      
-      let width = wallSize.x;
-      let depth = wallSize.z;
+    for (let i = 0; i < PRECOMPUTED_COLLIDERS.length; i++) {
+        const c = PRECOMPUTED_COLLIDERS[i];
+        if (c.maxY < playerBottom || c.minY > playerTop) continue;
 
-      if (Math.abs(rotation - Math.PI / 2) < 0.1) {
-        width = wallSize.z;
-        depth = wallSize.x;
-      }
-
-      // Y Check (Height)
-      const minY = wallPos.y - wallSize.y / 2;
-      const maxY = wallPos.y + wallSize.y / 2;
-      
-      // Dynamic height check based on player position
-      const playerBottom = newPos.y - 1.5;
-      const playerTop = newPos.y + 0.2;
-
-      if (maxY < playerBottom || minY > playerTop) continue;
-
-      // AABB Check
-      const minX = wallPos.x - width / 2 - PLAYER_RADIUS;
-      const maxX = wallPos.x + width / 2 + PLAYER_RADIUS;
-      const minZ = wallPos.z - depth / 2 - PLAYER_RADIUS;
-      const maxZ = wallPos.z + depth / 2 + PLAYER_RADIUS;
-
-      if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
-        return true;
-      }
-    }
-
-    // Check Furniture
-    const allFurniture = [...FURNITURE, ...FURNITURE_2ND_FLOOR];
-    for (const item of allFurniture) {
-      // Ignore non-collidable items
-      if (['Rug', 'LivingRug', 'Poster', 'CeilingLight', 'UnderBed', 'UnderMasterBed', 'Plant', 'Lamp', 'Book', 'ToiletPaper', 'PlayRug', 'TeleportPad2'].includes(item.name)) continue;
-
-      const pos = new THREE.Vector3(...item.position);
-      const size = new THREE.Vector3(...item.size);
-      
-      // Y Check
-      const minY = pos.y - size.y / 2;
-      const maxY = pos.y + size.y / 2;
-      
-      const playerBottom = newPos.y - 1.5;
-      const playerTop = newPos.y + 0.2;
-      
-      if (maxY < playerBottom || minY > playerTop) continue;
-
-      const minX = pos.x - size.x / 2 - PLAYER_RADIUS;
-      const maxX = pos.x + size.x / 2 + PLAYER_RADIUS;
-      const minZ = pos.z - size.z / 2 - PLAYER_RADIUS;
-      const maxZ = pos.z + size.z / 2 + PLAYER_RADIUS;
-
-      if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
-        return true;
-      }
+        if (newPos.x > c.minX - PLAYER_RADIUS && newPos.x < c.maxX + PLAYER_RADIUS && 
+            newPos.z > c.minZ - PLAYER_RADIUS && newPos.z < c.maxZ + PLAYER_RADIUS) {
+            return true;
+        }
     }
 
     // Check Doors
@@ -171,7 +177,7 @@ export function Player() {
     const gameStoreState = useGameStore.getState();
     const interactPressed = KEYS.e || gameStoreState.mobileInteract;
     const consumeInteract = () => {
-        consumeInteract();
+        KEYS.e = false;
         gameStoreState.setMobileInteract(false);
     };
 
@@ -254,7 +260,7 @@ export function Player() {
     }
 
     // Head Bob
-    if (KEYS.w || KEYS.s || KEYS.a || KEYS.d) {
+    if (headBobbing && (KEYS.w || KEYS.s || KEYS.a || KEYS.d)) {
         const time = state.clock.getElapsedTime();
         camera.position.y = targetY + Math.sin(time * 10) * 0.05;
     } else {
@@ -875,6 +881,7 @@ export function Player() {
   const spotLightRef = useRef<THREE.SpotLight>(null);
   const inventory = useGameStore((state) => state.inventory);
   const hasFlashlight = inventory.includes('Flashlight');
+  const lowPerformance = useGameStore((state) => state.lowPerformance);
 
   useFrame((state) => {
     if (spotLightRef.current) {
@@ -893,7 +900,7 @@ export function Player() {
             angle={0.6} 
             penumbra={0.5} 
             distance={15} 
-            castShadow 
+            castShadow={!lowPerformance} 
             color="#ffffee"
         />
     </>

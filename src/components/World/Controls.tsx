@@ -1,14 +1,18 @@
 import { useEffect, useRef } from 'react';
 import { useThree } from '@react-three/fiber';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import * as THREE from 'three';
 
 export function Controls() {
   const { camera, gl } = useThree();
   const isLocked = useRef(false);
-  const sensitivity = useGameStore((state) => state.sensitivity);
-  const gameState = useGameStore((state) => state.gameState);
-  const isMobile = useGameStore((state) => state.isMobile);
+  const { sensitivity, gameState, isMobile, invertY } = useGameStore(useShallow(state => ({
+    sensitivity: state.sensitivity,
+    gameState: state.gameState,
+    isMobile: state.isMobile,
+    invertY: state.invertY
+  })));
 
   useEffect(() => {
     if (gameState === 'playing' && !isMobile) {
@@ -26,7 +30,7 @@ export function Controls() {
       const locked = document.pointerLockElement === gl.domElement;
       isLocked.current = locked;
       if (!locked && useGameStore.getState().gameState === 'playing') {
-          useGameStore.getState().setGameState('menu');
+          useGameStore.getState().setGameState('paused');
       }
     };
 
@@ -38,7 +42,8 @@ export function Controls() {
         camera.rotation.y -= movementX * 0.002 * sensitivity;
 
         // Pitch (X-axis rotation)
-        camera.rotation.x -= movementY * 0.002 * sensitivity;
+        const invertMult = invertY ? -1 : 1;
+        camera.rotation.x -= movementY * 0.002 * sensitivity * invertMult;
         
         // Clamp pitch to avoid flipping
         camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
@@ -54,6 +59,12 @@ export function Controls() {
 
     const onTouchStart = (event: TouchEvent) => {
       if (gameState !== 'playing') return;
+      
+      // Ignore if touching a button or interactive element
+      if (event.target instanceof Element && event.target.closest('button, .touch-none')) {
+          return;
+      }
+
       // Find a touch on the right side of the screen
       for (let i = 0; i < event.changedTouches.length; i++) {
         const touch = event.changedTouches[i];
@@ -74,8 +85,9 @@ export function Controls() {
           const movementX = touch.clientX - lastTouchX;
           const movementY = touch.clientY - lastTouchY;
           
-          camera.rotation.y -= movementX * 0.004 * sensitivity;
-          camera.rotation.x -= movementY * 0.004 * sensitivity;
+          const invertMult = invertY ? -1 : 1;
+          camera.rotation.y -= movementX * 0.006 * sensitivity;
+          camera.rotation.x -= movementY * 0.006 * sensitivity * invertMult;
           camera.rotation.x = Math.max(-Math.PI / 2, Math.min(Math.PI / 2, camera.rotation.x));
           camera.rotation.order = 'YXZ';
           
@@ -110,7 +122,7 @@ export function Controls() {
       document.removeEventListener('touchend', onTouchEnd);
       document.removeEventListener('touchcancel', onTouchEnd);
     };
-  }, [camera, gl, gameState, sensitivity, isMobile]);
+  }, [camera, gl, gameState, sensitivity, isMobile, invertY]);
 
   // Unlock when not playing
   useEffect(() => {

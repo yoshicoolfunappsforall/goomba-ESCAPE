@@ -1,34 +1,25 @@
 import React, { useRef, useEffect, useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export function MobileControls() {
-  const isMobile = useGameStore((state) => state.isMobile);
-  const gameState = useGameStore((state) => state.gameState);
-  const setMobileMovement = useGameStore((state) => state.setMobileMovement);
-  const setMobileInteract = useGameStore((state) => state.setMobileInteract);
-  const interactionText = useGameStore((state) => state.interactionText);
+  const { isMobile, gameState, setMobileMovement, setMobileInteract, interactionText } = useGameStore(useShallow(state => ({
+    isMobile: state.isMobile,
+    gameState: state.gameState,
+    setMobileMovement: state.setMobileMovement,
+    setMobileInteract: state.setMobileInteract,
+    interactionText: state.interactionText
+  })));
 
   const joystickRef = useRef<HTMLDivElement>(null);
   const [joystickPos, setJoystickPos] = useState({ x: 0, y: 0 });
   const [isDragging, setIsDragging] = useState(false);
   const touchId = useRef<number | null>(null);
 
-  useEffect(() => {
-    // Detect mobile device
-    const checkMobile = () => {
-      const userAgent = navigator.userAgent || navigator.vendor || (window as any).opera;
-      const isMobileDevice = /android|ipad|playbook|silk|iphone|ipod/i.test(userAgent) || window.innerWidth <= 768;
-      useGameStore.getState().setIsMobile(isMobileDevice);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
   if (!isMobile || gameState !== 'playing') return null;
 
   const handleTouchStart = (e: React.TouchEvent) => {
+    e.stopPropagation();
     if (touchId.current !== null) return;
     
     for (let i = 0; i < e.changedTouches.length; i++) {
@@ -43,6 +34,7 @@ export function MobileControls() {
   };
 
   const handleTouchMove = (e: React.TouchEvent) => {
+    e.stopPropagation();
     if (touchId.current === null) return;
     
     for (let i = 0; i < e.changedTouches.length; i++) {
@@ -55,6 +47,7 @@ export function MobileControls() {
   };
 
   const handleTouchEnd = (e: React.TouchEvent) => {
+    e.stopPropagation();
     for (let i = 0; i < e.changedTouches.length; i++) {
       if (e.changedTouches[i].identifier === touchId.current) {
         touchId.current = null;
@@ -95,6 +88,20 @@ export function MobileControls() {
 
   return (
     <div className="absolute inset-0 pointer-events-none z-40 flex justify-between items-end p-8">
+      {/* Pause Button */}
+      <button 
+        className="absolute top-4 right-4 w-10 h-10 bg-black/50 border border-white/20 rounded-full flex items-center justify-center pointer-events-auto touch-none active:bg-white/20"
+        onClick={(e) => {
+            e.stopPropagation();
+            useGameStore.getState().setGameState('paused');
+        }}
+      >
+        <div className="flex space-x-1">
+            <div className="w-1 h-4 bg-white"></div>
+            <div className="w-1 h-4 bg-white"></div>
+        </div>
+      </button>
+
       {/* Left Joystick */}
       <div 
         ref={joystickRef}
@@ -119,6 +126,7 @@ export function MobileControls() {
             className="w-20 h-20 bg-red-500/80 hover:bg-red-600 rounded-full border-2 border-white/50 text-white font-bold shadow-[0_0_15px_rgba(255,0,0,0.5)] active:scale-95 transition-all flex items-center justify-center"
             onTouchStart={(e) => {
               e.preventDefault();
+              e.stopPropagation();
               setMobileInteract(true);
               // Reset after a short delay to simulate key press
               setTimeout(() => setMobileInteract(false), 100);

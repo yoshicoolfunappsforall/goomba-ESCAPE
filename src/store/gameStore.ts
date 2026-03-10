@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface GameState {
-  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story';
-  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story') => void;
+  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused';
+  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused') => void;
   hasKey: boolean;
   setHasKey: (hasKey: boolean) => void;
   doorCodeKnown: boolean;
@@ -48,6 +48,8 @@ interface GameState {
   
   isMobile: boolean;
   setIsMobile: (isMobile: boolean) => void;
+  lowPerformance: boolean;
+  setLowPerformance: (low: boolean) => void;
   mobileMovement: { x: number, y: number };
   setMobileMovement: (movement: { x: number, y: number }) => void;
   mobileInteract: boolean;
@@ -58,6 +60,16 @@ interface GameState {
   setSensitivity: (val: number) => void;
   volume: number;
   setVolume: (val: number) => void;
+  showFps: boolean;
+  setShowFps: (show: boolean) => void;
+  fpsLimit: number;
+  setFpsLimit: (limit: number) => void;
+  fov: number;
+  setFov: (fov: number) => void;
+  headBobbing: boolean;
+  setHeadBobbing: (bobbing: boolean) => void;
+  invertY: boolean;
+  setInvertY: (invert: boolean) => void;
   
   isHiding: boolean;
   setIsHiding: (hiding: boolean) => void;
@@ -71,6 +83,8 @@ interface GameState {
   setDifficulty: (diff: 'easy' | 'medium' | 'hard') => void;
   challengeMode: boolean;
   setChallengeMode: (enabled: boolean) => void;
+  threeGoombaMode: boolean;
+  setThreeGoombaMode: (enabled: boolean) => void;
   inventory: string[];
   addToInventory: (item: string) => void;
   interactionText: string | null;
@@ -126,6 +140,8 @@ export const useGameStore = create<GameState>((set) => ({
   
   isMobile: false,
   setIsMobile: (isMobile) => set({ isMobile }),
+  lowPerformance: false,
+  setLowPerformance: (low) => set({ lowPerformance: low }),
   mobileMovement: { x: 0, y: 0 },
   setMobileMovement: (movement) => set({ mobileMovement: movement }),
   mobileInteract: false,
@@ -135,6 +151,16 @@ export const useGameStore = create<GameState>((set) => ({
   setSensitivity: (val) => set({ sensitivity: val }),
   volume: 0.5,
   setVolume: (val) => set({ volume: val }),
+  showFps: false,
+  setShowFps: (show) => set({ showFps: show }),
+  fpsLimit: 60,
+  setFpsLimit: (limit) => set({ fpsLimit: limit }),
+  fov: 75,
+  setFov: (fov) => set({ fov }),
+  headBobbing: true,
+  setHeadBobbing: (bobbing) => set({ headBobbing: bobbing }),
+  invertY: false,
+  setInvertY: (invert) => set({ invertY: invert }),
   
   isHiding: false,
   setIsHiding: (hiding) => set({ isHiding: hiding }),
@@ -148,6 +174,8 @@ export const useGameStore = create<GameState>((set) => ({
   setDifficulty: (diff) => set({ difficulty: diff }),
   challengeMode: false,
   setChallengeMode: (enabled) => set({ challengeMode: enabled }),
+  threeGoombaMode: false,
+  setThreeGoombaMode: (enabled) => set({ threeGoombaMode: enabled }),
   inventory: [],
   addToInventory: (item) => set((state) => ({ inventory: [...state.inventory, item] })),
   interactionText: null,

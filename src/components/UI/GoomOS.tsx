@@ -1,8 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export const GoomOS: React.FC = () => {
-  const setGameState = useGameStore((state) => state.setGameState);
+  const { setGameState } = useGameStore(useShallow(state => ({
+    setGameState: state.setGameState
+  })));
   const [password, setPassword] = useState('');
   const [unlocked, setUnlocked] = useState(false);
   const [app, setApp] = useState<'desktop' | 'mail' | 'browser' | 'files'>('desktop');

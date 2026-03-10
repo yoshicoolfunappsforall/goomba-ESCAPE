@@ -1,14 +1,17 @@
 import React, { useState, useEffect } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { X } from 'lucide-react';
 
 export function SafeKeypad() {
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
   const [success, setSuccess] = useState(false);
-  const setSafeKeypadOpen = useGameStore((state) => state.setSafeKeypadOpen);
-  const setSafeOpen = useGameStore((state) => state.setSafeOpen);
-  const setGameState = useGameStore((state) => state.setGameState);
+  const { setSafeKeypadOpen, setSafeOpen, setGameState } = useGameStore(useShallow(state => ({
+    setSafeKeypadOpen: state.setSafeKeypadOpen,
+    setSafeOpen: state.setSafeOpen,
+    setGameState: state.setGameState
+  })));
 
   const handlePress = (num: string) => {
     if (input.length < 4) {

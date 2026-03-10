@@ -1,12 +1,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { X, Minus, Square, Search, Wifi, Battery, Terminal, FileText, Globe, Gamepad2, Power, Mail, ArrowLeft, ArrowRight, RotateCw, Home, File } from 'lucide-react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { motion, AnimatePresence } from 'motion/react';
 
 export default function Laptop() {
-  const setGameState = useGameStore((state) => state.setGameState);
-  const setDoorCodeKnown = useGameStore((state) => state.setDoorCodeKnown);
-  const setToolboxCodeKnown = useGameStore((state) => state.setToolboxCodeKnown);
+  const { setGameState, setDoorCodeKnown, setToolboxCodeKnown } = useGameStore(useShallow(state => ({
+    setGameState: state.setGameState,
+    setDoorCodeKnown: state.setDoorCodeKnown,
+    setToolboxCodeKnown: state.setToolboxCodeKnown
+  })));
   const [activeApp, setActiveApp] = useState<string | null>(null);
   const [currentTime, setCurrentTime] = useState(new Date());
   const [bootState, setBootState] = useState<'off' | 'booting' | 'on'>('off');

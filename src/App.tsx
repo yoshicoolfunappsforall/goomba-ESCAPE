@@ -1,11 +1,12 @@
 import { StrictMode, useEffect, Suspense, useState } from 'react';
 import * as THREE from 'three';
 import { useGameStore } from './store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import Laptop from './components/Laptop/Laptop';
 import { SafeKeypad } from './components/UI/SafeKeypad';
 import { ToolboxKeypad } from './components/UI/ToolboxKeypad';
 import { Canvas } from '@react-three/fiber';
-import { Sky, Stars, Loader, Environment, PerformanceMonitor, BakeShadows } from '@react-three/drei';
+import { Sky, Stars, Loader, Environment, PerformanceMonitor, BakeShadows, Bvh, Stats } from '@react-three/drei';
 import { EffectComposer, Bloom, Noise, Vignette } from '@react-three/postprocessing';
 import { House } from './components/World/House';
 import { Player } from './components/World/Player';
@@ -125,16 +126,35 @@ function HUD() {
 }
 
 function Menu() {
-  const setGameState = useGameStore((state) => state.setGameState);
-  const difficulty = useGameStore((state) => state.difficulty);
-  const setDifficulty = useGameStore((state) => state.setDifficulty);
-  const challengeMode = useGameStore((state) => state.challengeMode);
-  const setChallengeMode = useGameStore((state) => state.setChallengeMode);
+  const {
+    setGameState, difficulty, setDifficulty, challengeMode, setChallengeMode,
+    sensitivity, setSensitivity, volume, setVolume, showFps, setShowFps,
+    fpsLimit, setFpsLimit, fov, setFov, headBobbing, setHeadBobbing,
+    invertY, setInvertY, threeGoombaMode, setThreeGoombaMode
+  } = useGameStore(useShallow(state => ({
+    setGameState: state.setGameState,
+    difficulty: state.difficulty,
+    setDifficulty: state.setDifficulty,
+    challengeMode: state.challengeMode,
+    setChallengeMode: state.setChallengeMode,
+    sensitivity: state.sensitivity,
+    setSensitivity: state.setSensitivity,
+    volume: state.volume,
+    setVolume: state.setVolume,
+    showFps: state.showFps,
+    setShowFps: state.setShowFps,
+    fpsLimit: state.fpsLimit,
+    setFpsLimit: state.setFpsLimit,
+    fov: state.fov,
+    setFov: state.setFov,
+    headBobbing: state.headBobbing,
+    setHeadBobbing: state.setHeadBobbing,
+    invertY: state.invertY,
+    setInvertY: state.setInvertY,
+    threeGoombaMode: state.threeGoombaMode,
+    setThreeGoombaMode: state.setThreeGoombaMode
+  })));
   const [showSettings, setShowSettings] = useState(false);
-  const sensitivity = useGameStore((state) => state.sensitivity);
-  const setSensitivity = useGameStore((state) => state.setSensitivity);
-  const volume = useGameStore((state) => state.volume);
-  const setVolume = useGameStore((state) => state.setVolume);
   const uiScale = useAutoUiScale();
   
   const [splashText, setSplashText] = useState("Horror Edition");
@@ -200,6 +220,62 @@ function Menu() {
                         step="0.1" 
                         value={volume} 
                         onChange={(e) => setVolume(parseFloat(e.target.value))}
+                        className="w-full h-1 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
+                    />
+                </div>
+
+                <div className="group flex items-center justify-between">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest group-hover:text-blue-400 transition-colors">Show FPS</label>
+                    <button 
+                        onClick={() => setShowFps(!showFps)}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${showFps ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${showFps ? 'left-7' : 'left-1'}`} />
+                    </button>
+                </div>
+
+                <div className="group flex items-center justify-between">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest group-hover:text-blue-400 transition-colors">Head Bobbing</label>
+                    <button 
+                        onClick={() => setHeadBobbing(!headBobbing)}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${headBobbing ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${headBobbing ? 'left-7' : 'left-1'}`} />
+                    </button>
+                </div>
+
+                <div className="group flex items-center justify-between">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest group-hover:text-blue-400 transition-colors">Invert Y-Axis</label>
+                    <button 
+                        onClick={() => setInvertY(!invertY)}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${invertY ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${invertY ? 'left-7' : 'left-1'}`} />
+                    </button>
+                </div>
+
+                <div className="group">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Field of View (FOV): <span className="text-white ml-2">{fov}</span></label>
+                    <input 
+                        type="range" 
+                        min="60" 
+                        max="120" 
+                        step="1" 
+                        value={fov} 
+                        onChange={(e) => setFov(parseInt(e.target.value))}
+                        className="w-full h-1 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
+                    />
+                </div>
+
+                <div className="group">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">FPS Limit: <span className="text-white ml-2">{fpsLimit}</span></label>
+                    <input 
+                        type="range" 
+                        min="30" 
+                        max="144" 
+                        step="1" 
+                        value={fpsLimit} 
+                        onChange={(e) => setFpsLimit(parseInt(e.target.value))}
                         className="w-full h-1 bg-gray-800 rounded-none appearance-none cursor-pointer accent-blue-600 hover:accent-blue-500 transition-all"
                     />
                 </div>
@@ -279,6 +355,22 @@ function Menu() {
                     <span className="text-[10px] text-gray-600 uppercase tracking-wider">Double Enemies • Double Fear</span>
                 </div>
                 <div className={`w-4 h-4 border ${challengeMode ? 'bg-red-600 border-red-600' : 'border-gray-600'} transition-colors`}></div>
+            </div>
+
+            {/* 3 Goomba Mode */}
+            <div 
+                onClick={() => setThreeGoombaMode(!threeGoombaMode)}
+                className={`cursor-pointer w-full py-4 px-6 border transition-all duration-300 flex items-center justify-between group ${
+                    threeGoombaMode 
+                    ? 'bg-purple-900/10 border-purple-900/50' 
+                    : 'bg-transparent border-transparent hover:bg-white/5'
+                }`}
+            >
+                <div className="flex flex-col text-left">
+                    <span className={`text-sm font-bold uppercase tracking-widest ${threeGoombaMode ? 'text-purple-500' : 'text-gray-500 group-hover:text-gray-300'}`}>3 Goomba Mode</span>
+                    <span className="text-[10px] text-gray-600 uppercase tracking-wider">Triple the Threat</span>
+                </div>
+                <div className={`w-4 h-4 border ${threeGoombaMode ? 'bg-purple-600 border-purple-600' : 'border-gray-600'} transition-colors`}></div>
             </div>
 
             {/* Settings Button */}
@@ -438,6 +530,42 @@ function JumpscareScreen() {
   );
 }
 
+function PauseMenu() {
+  const setGameState = useGameStore((state) => state.setGameState);
+  const uiScale = useAutoUiScale();
+
+  return (
+    <div className="absolute inset-0 bg-black/80 flex items-center justify-center z-50 backdrop-blur-sm p-4">
+      <div 
+        className="relative w-full max-w-md flex flex-col items-center"
+        style={{ transform: `scale(${uiScale})` }}
+      >
+        <h1 className="text-6xl md:text-8xl font-black text-white mb-12 tracking-tighter drop-shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+            PAUSED
+        </h1>
+        
+        <div className="w-full space-y-4">
+            <button 
+              onClick={() => setGameState('playing')}
+              className="group w-full bg-white/5 hover:bg-blue-900/20 backdrop-blur-md border border-white/10 hover:border-blue-500/50 text-white font-bold py-4 md:py-6 px-6 md:px-8 transition-all duration-300 transform hover:scale-105 flex items-center justify-between"
+            >
+              <span className="text-lg md:text-xl tracking-[0.2em] uppercase group-hover:text-blue-500 transition-colors">Resume</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-blue-500">►</span>
+            </button>
+
+            <button 
+              onClick={() => setGameState('menu')}
+              className="group w-full bg-white/5 hover:bg-red-900/20 backdrop-blur-md border border-white/10 hover:border-red-500/50 text-white font-bold py-4 md:py-6 px-6 md:px-8 transition-all duration-300 transform hover:scale-105 flex items-center justify-between"
+            >
+              <span className="text-lg md:text-xl tracking-[0.2em] uppercase group-hover:text-red-500 transition-colors">Quit to Menu</span>
+              <span className="opacity-0 group-hover:opacity-100 transition-opacity text-red-500">►</span>
+            </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function StoryScreen() {
   const setGameState = useGameStore((state) => state.setGameState);
   const uiScale = useAutoUiScale();
@@ -505,15 +633,82 @@ function DialogueBox({ name, text, image, visible }: { name: string, text: strin
   );
 }
 
+function PlatformSelectScreen({ onSelect }: { onSelect: (platform: 'pc' | 'mobile') => void }) {
+  return (
+    <div className="absolute inset-0 bg-black flex flex-col items-center justify-center z-50 p-4">
+      <h1 className="text-4xl font-black text-white mb-8 tracking-widest uppercase text-center">Select Platform</h1>
+      <div className="flex flex-col md:flex-row gap-6">
+        <button 
+          onClick={() => onSelect('pc')}
+          className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-6 px-12 rounded-xl border-2 border-gray-600 hover:border-blue-500 transition-all text-xl uppercase tracking-wider"
+        >
+          PC
+        </button>
+        <button 
+          onClick={() => onSelect('mobile')}
+          className="bg-gray-800 hover:bg-gray-700 text-white font-bold py-6 px-12 rounded-xl border-2 border-gray-600 hover:border-blue-500 transition-all text-xl uppercase tracking-wider"
+        >
+          Mobile
+        </button>
+        <button 
+          disabled
+          className="bg-gray-900 text-gray-600 font-bold py-6 px-12 rounded-xl border-2 border-gray-800 cursor-not-allowed text-xl uppercase tracking-wider"
+        >
+          Console
+        </button>
+      </div>
+    </div>
+  );
+}
+
+function FpsLimiter() {
+  const fpsLimit = useGameStore((state) => state.fpsLimit);
+  const { invalidate } = useThree();
+
+  useEffect(() => {
+    if (fpsLimit >= 144) return; // Assume 144 is "unlimited" or max monitor refresh rate
+
+    let lastTime = performance.now();
+    let frameId: number;
+
+    const loop = (time: number) => {
+      frameId = requestAnimationFrame(loop);
+      const delta = time - lastTime;
+      const interval = 1000 / fpsLimit;
+
+      if (delta >= interval) {
+        lastTime = time - (delta % interval);
+        invalidate();
+      }
+    };
+
+    frameId = requestAnimationFrame(loop);
+    return () => cancelAnimationFrame(frameId);
+  }, [fpsLimit, invalidate]);
+
+  return null;
+}
+
 export default function App() {
-  const gameState = useGameStore((state) => state.gameState);
-  const setGameState = useGameStore((state) => state.setGameState);
-  const safeKeypadOpen = useGameStore((state) => state.safeKeypadOpen);
-  const toolboxKeypadOpen = useGameStore((state) => state.toolboxKeypadOpen);
-  const challengeMode = useGameStore((state) => state.challengeMode);
+  const {
+    gameState, setGameState, safeKeypadOpen, toolboxKeypadOpen, challengeMode,
+    threeGoombaMode, lowPerformance, setLowPerformance, showFps, fpsLimit, setIsMobile
+  } = useGameStore(useShallow(state => ({
+    gameState: state.gameState,
+    setGameState: state.setGameState,
+    safeKeypadOpen: state.safeKeypadOpen,
+    toolboxKeypadOpen: state.toolboxKeypadOpen,
+    challengeMode: state.challengeMode,
+    threeGoombaMode: state.threeGoombaMode,
+    lowPerformance: state.lowPerformance,
+    setLowPerformance: state.setLowPerformance,
+    showFps: state.showFps,
+    fpsLimit: state.fpsLimit,
+    setIsMobile: state.setIsMobile
+  })));
   const [dpr, setDpr] = useState(1.5);
-  const [lowPerformance, setLowPerformance] = useState(false);
   const [warningAccepted, setWarningAccepted] = useState(false);
+  const [platformSelected, setPlatformSelected] = useState(false);
 
   // Dialogue System
   const [dialogue, setDialogue] = useState<{name: string, text: string, image: string} | null>(null);
@@ -569,6 +764,13 @@ export default function App() {
     };
   }, [gameState]);
 
+  if (!platformSelected) {
+      return <PlatformSelectScreen onSelect={(platform) => {
+          setIsMobile(platform === 'mobile');
+          setPlatformSelected(true);
+      }} />;
+  }
+
   if (!warningAccepted) {
       return <WarningScreen onAccept={() => setWarningAccepted(true)} />;
   }
@@ -577,7 +779,13 @@ export default function App() {
     <div className="relative w-full h-screen bg-black overflow-hidden select-none">
       {/* 3D World Layer */}
       <div className="absolute inset-0 z-0">
-        <Canvas shadows dpr={dpr} camera={{ fov: 75, position: [0, 1.6, 0] }}>
+        <Canvas 
+            shadows 
+            dpr={dpr} 
+            camera={{ fov: 75, position: [0, 1.6, 0] }}
+            frameloop={fpsLimit >= 144 ? 'always' : 'demand'}
+        >
+            <FpsLimiter />
             <PerformanceMonitor 
                 onIncline={() => { setDpr(2); setLowPerformance(false); }} 
                 onDecline={() => { setDpr(1); setLowPerformance(true); }}
@@ -590,10 +798,13 @@ export default function App() {
             <pointLight position={[0, 4, 10]} intensity={0.3} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             <pointLight position={[0, 4, 25]} intensity={0.5} castShadow={!lowPerformance} shadow-mapSize={[512, 512]} />
             
+            {lowPerformance && <BakeShadows />}
+
             <Suspense fallback={null}>
-              <House />
-              {/* Main Enemy (1st Floor) */}
-              <Enemy />
+              <Bvh firstHitOnly>
+                <House />
+                {/* Main Enemy (1st Floor) */}
+                <Enemy />
               {/* Challenge Mode: Extra Enemy (1st Floor) */}
               {challengeMode && (
                   <Enemy 
@@ -655,9 +866,31 @@ export default function App() {
                     catchDistance={1.2}
                   />
               )}
+
+              {/* 3 Goomba Mode: Extra Enemy (Basement) */}
+              {threeGoombaMode && (
+                  <Enemy 
+                    name="GRANDPA GOOMBA"
+                    initialPosition={[0, 51.6, 10]} // Basement
+                    patrolPoints={[
+                        new THREE.Vector3(0, 51.6, 10),
+                        new THREE.Vector3(10, 51.6, 10),
+                        new THREE.Vector3(10, 51.6, -10),
+                        new THREE.Vector3(-10, 51.6, -10),
+                        new THREE.Vector3(-10, 51.6, 10),
+                    ]}
+                    scale={1.5} // Big and slow
+                    speed={1.5}
+                    runSpeed={3.0}
+                    viewDistance={8}
+                    fov={0.4}
+                    catchDistance={1.8}
+                  />
+              )}
+              </Bvh>
             </Suspense>
 
-            {gameState === 'playing' && !lowPerformance && (
+            {(gameState === 'playing' || gameState === 'paused') && !lowPerformance && (
             <EffectComposer>
                 <Bloom luminanceThreshold={0.5} luminanceSmoothing={0.9} height={300} intensity={0.5} />
                 <Noise opacity={0.1} />
@@ -665,12 +898,13 @@ export default function App() {
             </EffectComposer>
             )}
             
-            {(gameState === 'playing' || gameState === 'laptop') && (
+            {(gameState === 'playing' || gameState === 'laptop' || gameState === 'paused') && (
             <>
                 {gameState === 'playing' && <Controls />}
                 <Player />
             </>
             )}
+            {showFps && <Stats />}
         </Canvas>
       </div>
 
@@ -683,6 +917,7 @@ export default function App() {
         </>
       )}
       {gameState === 'menu' && <Menu />}
+      {gameState === 'paused' && <PauseMenu />}
       {gameState === 'story' && <StoryScreen />}
       {gameState === 'laptop' && safeKeypadOpen && <SafeKeypad />}
       {gameState === 'laptop' && toolboxKeypadOpen && <ToolboxKeypad />}

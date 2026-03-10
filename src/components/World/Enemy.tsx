@@ -1,9 +1,64 @@
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { Billboard, Text, useTexture } from '@react-three/drei';
 import * as THREE from 'three';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 import { WALLS, FURNITURE, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
+
+const PRECOMPUTED_COLLIDERS = (() => {
+    const colliders: { minX: number, maxX: number, minY: number, maxY: number, minZ: number, maxZ: number, isWall: boolean }[] = [];
+    
+    // Walls
+    const allWalls = [...WALLS, ...WALLS_2ND_FLOOR_FINAL];
+    for (const wall of allWalls) {
+      const wallPos = new THREE.Vector3(...wall.position);
+      const wallSize = new THREE.Vector3(...wall.size);
+      const rotation = wall.rotation ? wall.rotation[1] : 0;
+      
+      let width = wallSize.x;
+      let depth = wallSize.z;
+
+      if (Math.abs(rotation - Math.PI / 2) < 0.1) {
+        width = wallSize.z;
+        depth = wallSize.x;
+      }
+
+      const minY = wallPos.y - wallSize.y / 2;
+      const maxY = wallPos.y + wallSize.y / 2;
+      const minX = wallPos.x - width / 2;
+      const maxX = wallPos.x + width / 2;
+      const minZ = wallPos.z - depth / 2;
+      const maxZ = wallPos.z + depth / 2;
+
+      colliders.push({ minX, maxX, minY, maxY, minZ, maxZ, isWall: true });
+    }
+
+    // Furniture
+    const allFurniture = [...FURNITURE, ...FURNITURE_2ND_FLOOR];
+    for (const item of allFurniture) {
+      if (['Rug', 'LivingRug', 'Path', 'UnderBed', 'UnderMasterBed', 'Poster', 'CeilingLight', 'Plant', 'Lamp', 'Book', 'ToiletPaper', 'PlayRug', 'TeleportPad2'].includes(item.name)) continue;
+
+      const pos = new THREE.Vector3(...item.position);
+      const size = new THREE.Vector3(...item.size);
+      
+      const minY = pos.y - size.y / 2;
+      const maxY = pos.y + size.y / 2;
+      const minX = pos.x - size.x / 2;
+      const maxX = pos.x + size.x / 2;
+      const minZ = pos.z - size.z / 2;
+      const maxZ = pos.z + size.z / 2;
+
+      colliders.push({ minX, maxX, minY, maxY, minZ, maxZ, isWall: false });
+    }
+    
+    return colliders;
+})();
+
+const PRECOMPUTED_BOXES = PRECOMPUTED_COLLIDERS.map(c => new THREE.Box3(
+    new THREE.Vector3(c.minX, c.minY, c.minZ),
+    new THREE.Vector3(c.maxX, c.maxY, c.maxZ)
+));
 
 interface EnemyProps {
   initialPosition?: [number, number, number];
@@ -42,12 +97,14 @@ export function Enemy({
 }: EnemyProps) {
   const enemyRef = useRef<THREE.Group>(null);
   const { camera, scene } = useThree();
-  const setGameState = useGameStore((state) => state.setGameState);
-  const gameState = useGameStore((state) => state.gameState);
-  const isHiding = useGameStore((state) => state.isHiding);
-  const radioOn = useGameStore((state) => state.radioOn);
-  const tvOn = useGameStore((state) => state.tvOn);
-  const difficulty = useGameStore((state) => state.difficulty);
+  const { setGameState, gameState, isHiding, radioOn, tvOn, difficulty } = useGameStore(useShallow(state => ({
+    setGameState: state.setGameState,
+    gameState: state.gameState,
+    isHiding: state.isHiding,
+    radioOn: state.radioOn,
+    tvOn: state.tvOn,
+    difficulty: state.difficulty
+  })));
 
   // Difficulty Multipliers
   const difficultyMultipliers = {
@@ -97,17 +154,33 @@ export function Enemy({
 
   // Helper to get next patrol point
   const getNextPatrolIndex = (currentIndex: number, avoidNearPos?: THREE.Vector3) => {
-      const playerZ = camera.position.z;
-      const isPlayerOutside = playerZ > 32;
       const inventory = useGameStore.getState().inventory;
       const studyUnlocked = inventory.includes('Study Key');
       const storageUnlocked = inventory.includes('Storage Key');
       
-      // Combine points dynamically? 
-      // Or just append them to the list and filter by index range?
-      // Let's assume patrolPoints prop has the first 9.
-      // We can't easily modify the prop.
-      // Let's use a local full list.
+      if (name !== 'EVIL PARENT') {
+          let availableIndices = patrolPoints.map((_, i) => i).filter(i => i !== currentIndex);
+          availableIndices = availableIndices.filter(i => !recentPatrolIndices.includes(i));
+          if (availableIndices.length === 0) {
+              availableIndices = patrolPoints.map((_, i) => i).filter(i => i !== currentIndex);
+          }
+          if (avoidNearPos) {
+              const farIndices = availableIndices.filter(i => patrolPoints[i].distanceTo(avoidNearPos) > 15);
+              if (farIndices.length > 0) availableIndices = farIndices;
+          }
+          if (availableIndices.length === 0) return 0;
+          const nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
+          setRecentPatrolIndices(prev => {
+              const newHistory = [...prev, nextIndex];
+              if (newHistory.length > Math.floor(patrolPoints.length / 2)) newHistory.shift();
+              return newHistory;
+          });
+          return nextIndex;
+      }
+
+      const playerZ = camera.position.z;
+      const isPlayerOutside = playerZ > 32;
+      
       const allPoints = [...patrolPoints, ...outsidePatrolPoints];
       
       let availableIndices = allPoints.map((_, i) => i).filter(i => i !== currentIndex);
@@ -120,18 +193,9 @@ export function Enemy({
       
       // Filter based on Zone
       if (isPlayerOutside) {
-          // Prefer outside points (indices 9+) + Door (index 0 is Hallway Center [0,1,20], maybe add Door point?)
-          // Let's say indices 9, 10, 11 are outside.
-          // Also include index 3 (Hallway Start [0,1,10]) or maybe a new connector?
-          // Let's just allow all, but weight outside ones?
-          // Or strictly: If player outside, only patrol outside + hallway start.
           availableIndices = availableIndices.filter(i => i >= 9 || i === 0); 
       } else {
-          // Player inside: Patrol inside (0-8)
-          // But if enemy is currently outside (index >= 9), it needs to come back in.
-          // So if currentIndex >= 9, force it to go to 0 (Hallway).
           if (currentIndex >= 9) return 0;
-          
           availableIndices = availableIndices.filter(i => i < 9);
       }
 
@@ -140,20 +204,17 @@ export function Enemy({
       
       // If we ran out of points (history too long), just avoid current
       if (availableIndices.length === 0) {
-          // Re-calculate base available without history
            if (isPlayerOutside) {
               availableIndices = allPoints.map((_, i) => i).filter(i => (i >= 9 || i === 0) && i !== currentIndex);
            } else {
               availableIndices = allPoints.map((_, i) => i).filter(i => i < 9 && i !== currentIndex);
            }
            
-           // Re-apply lock filter
            if (!studyUnlocked) {
                availableIndices = availableIndices.filter(i => i !== 6);
            }
       }
 
-      // If we need to avoid a specific position (e.g. after searching), filter by distance
       if (avoidNearPos) {
           const farIndices = availableIndices.filter(i => allPoints[i].distanceTo(avoidNearPos) > 15);
           if (farIndices.length > 0) {
@@ -165,7 +226,6 @@ export function Enemy({
 
       const nextIndex = availableIndices[Math.floor(Math.random() * availableIndices.length)];
       
-      // Update history
       setRecentPatrolIndices(prev => {
           const newHistory = [...prev, nextIndex];
           if (newHistory.length > 4) newHistory.shift(); // Keep last 4
@@ -211,72 +271,18 @@ export function Enemy({
   }, [initialPosition]);
 
   const checkCollision = (newPos: THREE.Vector3) => {
-    // Check Walls
-    const allWalls = [...WALLS, ...WALLS_2ND_FLOOR_FINAL];
-    for (const wall of allWalls) {
-      const wallPos = new THREE.Vector3(...wall.position);
-      const wallSize = new THREE.Vector3(...wall.size);
-      const rotation = wall.rotation ? wall.rotation[1] : 0;
-      
-      let width = wallSize.x;
-      let depth = wallSize.z;
+    const enemyBottom = newPos.y - 0.9 * scale; 
+    const enemyTop = newPos.y + 0.9 * scale;
 
-      if (Math.abs(rotation - Math.PI / 2) < 0.1) {
-        width = wallSize.z;
-        depth = wallSize.x;
-      }
+    for (let i = 0; i < PRECOMPUTED_COLLIDERS.length; i++) {
+        const c = PRECOMPUTED_COLLIDERS[i];
+        if (c.maxY < enemyBottom || c.minY > enemyTop) continue;
 
-      // Y Check (Height)
-      const minY = wallPos.y - wallSize.y / 2;
-      const maxY = wallPos.y + wallSize.y / 2;
-      
-      // Adjust collision height check based on enemy scale/position
-      // Enemy center is at Y, height is roughly 2*scale
-      // Raise the bottom check slightly to avoid floor collision if floor is at y=0
-      const enemyBottom = newPos.y - 0.9 * scale; 
-      const enemyTop = newPos.y + 0.9 * scale;
-
-      if (maxY < enemyBottom || minY > enemyTop) continue;
-
-      // AABB Check
-      const minX = wallPos.x - width / 2 - ENEMY_RADIUS;
-      const maxX = wallPos.x + width / 2 + ENEMY_RADIUS;
-      const minZ = wallPos.z - depth / 2 - ENEMY_RADIUS;
-      const maxZ = wallPos.z + depth / 2 + ENEMY_RADIUS;
-
-      if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
-        return true;
-      }
+        if (newPos.x > c.minX - ENEMY_RADIUS && newPos.x < c.maxX + ENEMY_RADIUS && 
+            newPos.z > c.minZ - ENEMY_RADIUS && newPos.z < c.maxZ + ENEMY_RADIUS) {
+            return true;
+        }
     }
-
-    // Check Furniture
-    const allFurniture = [...FURNITURE, ...FURNITURE_2ND_FLOOR];
-    for (const item of allFurniture) {
-      // Ignore non-collidable items (Floor rugs, etc)
-      if (['Rug', 'LivingRug', 'Path', 'UnderBed', 'UnderMasterBed', 'Poster', 'CeilingLight', 'Plant', 'Lamp', 'Book', 'ToiletPaper', 'PlayRug', 'TeleportPad2'].includes(item.name)) continue;
-
-      const pos = new THREE.Vector3(...item.position);
-      const size = new THREE.Vector3(...item.size);
-      
-      // Y Check
-      const minY = pos.y - size.y / 2;
-      const maxY = pos.y + size.y / 2;
-      
-      const enemyBottom = newPos.y - 0.9 * scale;
-      const enemyTop = newPos.y + 0.9 * scale;
-      
-      if (maxY < enemyBottom || minY > enemyTop) continue;
-
-      const minX = pos.x - size.x / 2 - ENEMY_RADIUS;
-      const maxX = pos.x + size.x / 2 + ENEMY_RADIUS;
-      const minZ = pos.z - size.z / 2 - ENEMY_RADIUS;
-      const maxZ = pos.z + size.z / 2 + ENEMY_RADIUS;
-
-      if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
-        return true;
-      }
-    }
-
     return false;
   };
 
@@ -296,28 +302,16 @@ export function Enemy({
       const maxAngle = effectiveFov * Math.PI;
       if (angle > maxAngle) return false;
 
-      // Raycast check for walls/obstacles
-      raycaster.current.set(enemyPos, toPlayer.clone().normalize());
-      raycaster.current.far = dist;
+      // Raycast check for walls/obstacles using precomputed AABBs
+      const ray = new THREE.Ray(enemyPos, toPlayer.clone().normalize());
+      const target = new THREE.Vector3();
       
-      const intersects = raycaster.current.intersectObjects(scene.children, true);
-      
-      for (const hit of intersects) {
-          // Ignore enemy itself (billboard or mesh)
-          let isEnemy = false;
-          let obj: THREE.Object3D | null = hit.object;
-          while (obj) {
-              if (obj === enemyRef.current) {
-                  isEnemy = true;
-                  break;
+      for (let i = 0; i < PRECOMPUTED_BOXES.length; i++) {
+          if (ray.intersectBox(PRECOMPUTED_BOXES[i], target)) {
+              const hitDist = enemyPos.distanceTo(target);
+              if (hitDist < dist - 0.5) {
+                  return false;
               }
-              obj = obj.parent;
-          }
-          if (isEnemy) continue;
-
-          // If hit distance is less than dist to player (minus small buffer), it's an obstacle
-          if (hit.distance < dist - 0.5) {
-              return false;
           }
       }
 
@@ -468,7 +462,7 @@ export function Enemy({
         // Patrol
         // Ensure patrol index is valid
         // Combine points again for lookup
-        const allPoints = [...patrolPoints, ...outsidePatrolPoints];
+        const allPoints = name === 'EVIL PARENT' ? [...patrolPoints, ...outsidePatrolPoints] : patrolPoints;
         
         if (patrolIndex >= allPoints.length) setPatrolIndex(0);
         moveTarget = allPoints[patrolIndex];

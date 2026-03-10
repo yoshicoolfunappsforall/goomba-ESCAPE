@@ -1,13 +1,17 @@
 import * as THREE from 'three';
-import { Grid, Text } from '@react-three/drei';
+import { Grid, Text, Instances, Instance } from '@react-three/drei';
 import { WALLS, FURNITURE, ITEMS, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export function House() {
-  const safeOpen = useGameStore((state) => state.safeOpen);
-  const ventOpen = useGameStore((state) => state.ventOpen);
-  const storageOpen = useGameStore((state) => state.storageOpen);
-  const inventory = useGameStore((state) => state.inventory);
+  const { safeOpen, ventOpen, storageOpen, inventory, lowPerformance } = useGameStore(useShallow(state => ({
+    safeOpen: state.safeOpen,
+    ventOpen: state.ventOpen,
+    storageOpen: state.storageOpen,
+    inventory: state.inventory,
+    lowPerformance: state.lowPerformance
+  })));
   
   return (
     <group>
@@ -93,32 +97,32 @@ export function House() {
       </mesh>
 
       {/* Walls 1st Floor */}
-      {WALLS.map((wall, index) => (
-        <mesh
-          key={`wall-${index}`}
-          position={new THREE.Vector3(...wall.position)}
-          rotation={new THREE.Euler(...(wall.rotation || [0, 0, 0]))}
-          receiveShadow
-          castShadow
-        >
-          <boxGeometry args={[wall.size[0], wall.size[1], wall.size[2]]} />
-          <meshStandardMaterial color="#e2e8f0" roughness={0.9} />
-        </mesh>
-      ))}
+      <Instances limit={WALLS.length} castShadow={!lowPerformance} receiveShadow>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#e2e8f0" roughness={0.9} />
+        {WALLS.map((wall, index) => (
+          <Instance
+            key={`wall-${index}`}
+            position={new THREE.Vector3(...wall.position)}
+            rotation={new THREE.Euler(...(wall.rotation || [0, 0, 0]))}
+            scale={new THREE.Vector3(...wall.size)}
+          />
+        ))}
+      </Instances>
 
       {/* Walls 2nd Floor */}
-      {WALLS_2ND_FLOOR_FINAL.map((wall, index) => (
-        <mesh
-          key={`wall2-${index}`}
-          position={new THREE.Vector3(...wall.position)}
-          rotation={new THREE.Euler(...(wall.rotation || [0, 0, 0]))}
-          receiveShadow
-          castShadow
-        >
-          <boxGeometry args={[wall.size[0], wall.size[1], wall.size[2]]} />
-          <meshStandardMaterial color="#BBDEFB" roughness={0.9} /> {/* Slightly blue walls */}
-        </mesh>
-      ))}
+      <Instances limit={WALLS_2ND_FLOOR_FINAL.length} castShadow={!lowPerformance} receiveShadow>
+        <boxGeometry args={[1, 1, 1]} />
+        <meshStandardMaterial color="#BBDEFB" roughness={0.9} /> {/* Slightly blue walls */}
+        {WALLS_2ND_FLOOR_FINAL.map((wall, index) => (
+          <Instance
+            key={`wall2-${index}`}
+            position={new THREE.Vector3(...wall.position)}
+            rotation={new THREE.Euler(...(wall.rotation || [0, 0, 0]))}
+            scale={new THREE.Vector3(...wall.size)}
+          />
+        ))}
+      </Instances>
 
       {/* Teleport Pads */}
       {/* 1st Floor Pad */}

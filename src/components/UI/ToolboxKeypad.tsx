@@ -1,12 +1,15 @@
 import { useState } from 'react';
 import { useGameStore } from '../../store/gameStore';
+import { useShallow } from 'zustand/react/shallow';
 
 export function ToolboxKeypad() {
   const [input, setInput] = useState('');
   const [error, setError] = useState(false);
-  const setToolboxOpen = useGameStore((state) => state.setToolboxOpen);
-  const setToolboxKeypadOpen = useGameStore((state) => state.setToolboxKeypadOpen);
-  const setGameState = useGameStore((state) => state.setGameState);
+  const { setToolboxOpen, setToolboxKeypadOpen, setGameState } = useGameStore(useShallow(state => ({
+    setToolboxOpen: state.setToolboxOpen,
+    setToolboxKeypadOpen: state.setToolboxKeypadOpen,
+    setGameState: state.setGameState
+  })));
 
   const handlePress = (num: string) => {
     if (input.length < 3) {
