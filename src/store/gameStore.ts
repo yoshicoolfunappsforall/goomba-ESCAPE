@@ -70,6 +70,8 @@ interface GameState {
   setHeadBobbing: (bobbing: boolean) => void;
   invertY: boolean;
   setInvertY: (invert: boolean) => void;
+  popupsEnabled: boolean;
+  setPopupsEnabled: (enabled: boolean) => void;
   
   isHiding: boolean;
   setIsHiding: (hiding: boolean) => void;
@@ -161,6 +163,8 @@ export const useGameStore = create<GameState>((set) => ({
   setHeadBobbing: (bobbing) => set({ headBobbing: bobbing }),
   invertY: false,
   setInvertY: (invert) => set({ invertY: invert }),
+  popupsEnabled: false,
+  setPopupsEnabled: (enabled) => set({ popupsEnabled: enabled }),
   
   isHiding: false,
   setIsHiding: (hiding) => set({ isHiding: hiding }),

@@ -70,16 +70,18 @@ export function Player() {
   const lastValidPosition = useRef(new THREE.Vector3(0, 1.6, 0));
 
   useEffect(() => {
-    camera.fov = fov;
-    camera.updateProjectionMatrix();
+    const cam = camera as THREE.PerspectiveCamera;
+    cam.fov = fov;
+    cam.updateProjectionMatrix();
   }, [fov, camera]);
 
   useEffect(() => {
+    const cam = camera as THREE.PerspectiveCamera;
     // Reset camera position on mount
-    camera.position.set(0, 1.6, 0);
-    camera.rotation.set(0, 0, 0);
-    camera.fov = fov;
-    camera.updateProjectionMatrix();
+    cam.position.set(0, 1.6, 0);
+    cam.rotation.set(0, 0, 0);
+    cam.fov = fov;
+    cam.updateProjectionMatrix();
 
     // Reset keys on mount
     KEYS.w = false;
@@ -226,37 +228,33 @@ export function Player() {
     const moveForward = velocity.z * dt * currentSpeed;
     const moveRight = velocity.x * dt * currentSpeed;
 
-    const currentPos = camera.position.clone();
-    
-    // Try X movement
-    camera.translateX(moveRight);
-    const newPosX = camera.position.clone();
-    // Revert to check Z separately (sliding along walls)
-    camera.position.copy(currentPos);
-    
-    // Convert local movement to world space for collision check
-    // Actually, translateX/Z moves relative to camera rotation.
-    // We need to calculate the world space delta.
-    
-    // Easier way: Apply move, check collision, revert if hit.
-    
-    // 1. Apply X-axis movement (relative to camera view)
-    camera.translateX(moveRight);
-    // We need to ensure we are only moving in X/Z plane, not flying up/down
-    camera.position.y = targetY; 
-    
-    if (checkCollision(camera.position)) {
-      camera.position.copy(currentPos); // Revert if hit
-    }
-    
-    const posAfterX = camera.position.clone();
+    // Sub-stepping for player collision
+    const totalMoveLength = Math.sqrt(moveForward * moveForward + moveRight * moveRight);
+    const steps = Math.max(1, Math.ceil(totalMoveLength / 0.1));
+    const stepForward = moveForward / steps;
+    const stepRight = moveRight / steps;
 
-    // 2. Apply Z-axis movement
-    camera.translateZ(-moveForward);
-    camera.position.y = targetY;
+    for (let i = 0; i < steps; i++) {
+        const currentPos = camera.position.clone();
+        
+        // 1. Apply X-axis movement (relative to camera view)
+        camera.translateX(stepRight);
+        // We need to ensure we are only moving in X/Z plane, not flying up/down
+        camera.position.y = targetY; 
+        
+        if (checkCollision(camera.position)) {
+          camera.position.copy(currentPos); // Revert if hit
+        }
+        
+        const posAfterX = camera.position.clone();
 
-    if (checkCollision(camera.position)) {
-      camera.position.copy(posAfterX); // Revert Z but keep X
+        // 2. Apply Z-axis movement
+        camera.translateZ(-stepForward);
+        camera.position.y = targetY;
+
+        if (checkCollision(camera.position)) {
+          camera.position.copy(posAfterX); // Revert Z but keep X
+        }
     }
 
     // Head Bob

@@ -130,7 +130,8 @@ function Menu() {
     setGameState, difficulty, setDifficulty, challengeMode, setChallengeMode,
     sensitivity, setSensitivity, volume, setVolume, showFps, setShowFps,
     fpsLimit, setFpsLimit, fov, setFov, headBobbing, setHeadBobbing,
-    invertY, setInvertY, threeGoombaMode, setThreeGoombaMode
+    invertY, setInvertY, threeGoombaMode, setThreeGoombaMode,
+    popupsEnabled, setPopupsEnabled
   } = useGameStore(useShallow(state => ({
     setGameState: state.setGameState,
     difficulty: state.difficulty,
@@ -152,9 +153,12 @@ function Menu() {
     invertY: state.invertY,
     setInvertY: state.setInvertY,
     threeGoombaMode: state.threeGoombaMode,
-    setThreeGoombaMode: state.setThreeGoombaMode
+    setThreeGoombaMode: state.setThreeGoombaMode,
+    popupsEnabled: state.popupsEnabled,
+    setPopupsEnabled: state.setPopupsEnabled
   })));
   const [showSettings, setShowSettings] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const uiScale = useAutoUiScale();
   
   const [splashText, setSplashText] = useState("Horror Edition");
@@ -254,6 +258,16 @@ function Menu() {
                     </button>
                 </div>
 
+                <div className="group flex items-center justify-between">
+                    <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest group-hover:text-blue-400 transition-colors">Popups</label>
+                    <button 
+                        onClick={() => setPopupsEnabled(!popupsEnabled)}
+                        className={`w-12 h-6 rounded-full transition-colors relative ${popupsEnabled ? 'bg-blue-600' : 'bg-gray-700'}`}
+                    >
+                        <div className={`w-4 h-4 rounded-full bg-white absolute top-1 transition-transform ${popupsEnabled ? 'left-7' : 'left-1'}`} />
+                    </button>
+                </div>
+
                 <div className="group">
                     <label className="block text-gray-400 text-[10px] md:text-xs uppercase tracking-widest mb-4 group-hover:text-blue-400 transition-colors">Field of View (FOV): <span className="text-white ml-2">{fov}</span></label>
                     <input 
@@ -283,6 +297,53 @@ function Menu() {
 
             <button 
               onClick={() => setShowSettings(false)}
+              className="mt-12 md:mt-16 w-full bg-transparent hover:bg-white/5 text-gray-400 hover:text-white font-bold py-3 md:py-4 px-6 border border-gray-700 hover:border-gray-500 transition-all duration-300 uppercase tracking-widest text-xs md:text-sm"
+            >
+              Return to Menu
+            </button>
+          </div>
+        </div>
+      );
+  }
+
+  if (showAbout) {
+      return (
+        <div className="absolute inset-0 bg-black/95 flex items-center justify-center z-50 backdrop-blur-md p-4 overflow-y-auto">
+          <div 
+            className="bg-gray-900/80 p-6 md:p-12 rounded-none border border-gray-800 shadow-2xl max-w-2xl w-full text-center animate-in fade-in zoom-in duration-300 relative overflow-hidden"
+            style={{ transform: `scale(${uiScale})` }}
+          >
+            {/* Decorative Lines */}
+            <div className="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-900 to-transparent opacity-50"></div>
+            <div className="absolute bottom-0 left-0 w-full h-1 bg-gradient-to-r from-transparent via-red-900 to-transparent opacity-50"></div>
+
+            <h2 className="text-2xl md:text-4xl font-black text-white mb-8 md:mb-12 tracking-[0.2em] uppercase border-b border-gray-800 pb-4">About Goomba Escape</h2>
+            
+            <div className="space-y-6 text-left px-2 md:px-8 text-gray-300 text-sm md:text-base leading-relaxed">
+                <p>
+                    <strong>Goomba Escape</strong> is a thrilling horror survival game where you must outsmart your strict Goomba parents. 
+                    They expect nothing but perfection, and an A- is simply unacceptable. 
+                </p>
+                <p>
+                    Navigate through the house, find the hidden codes, unlock the safe, and escape before they catch you. 
+                    Use your wits, hide in closets, and remember: silence is your best friend.
+                </p>
+                <p>
+                    Developed with React Three Fiber and Zustand.
+                </p>
+
+                <div className="mt-12 pt-8 border-t border-gray-800 text-center">
+                    <h3 className="text-xl font-bold text-white mb-6 uppercase tracking-widest">Coming Soon</h3>
+                    <div className="flex flex-col md:flex-row items-center justify-center gap-6">
+                        <img src="https://i.ibb.co/XkJGY2z2/windows-22.png" alt="Windows" className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                        <img src="https://i.ibb.co/DgrV1Nb8/get-it-on-google-play.jpg" alt="Google Play" className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                        <img src="https://i.ibb.co/rfcRbF0r/2026-03-09-0xn-Kleki.png" alt="App Store" className="h-12 object-contain opacity-70 hover:opacity-100 transition-opacity" />
+                    </div>
+                </div>
+            </div>
+
+            <button 
+              onClick={() => setShowAbout(false)}
               className="mt-12 md:mt-16 w-full bg-transparent hover:bg-white/5 text-gray-400 hover:text-white font-bold py-3 md:py-4 px-6 border border-gray-700 hover:border-gray-500 transition-all duration-300 uppercase tracking-widest text-xs md:text-sm"
             >
               Return to Menu
@@ -373,13 +434,21 @@ function Menu() {
                 <div className={`w-4 h-4 border ${threeGoombaMode ? 'bg-purple-600 border-purple-600' : 'border-gray-600'} transition-colors`}></div>
             </div>
 
-            {/* Settings Button */}
-            <button 
-              onClick={() => setShowSettings(true)}
-              className="w-full py-4 text-gray-500 hover:text-white text-xs font-bold uppercase tracking-[0.3em] transition-colors hover:bg-white/5"
-            >
-              Settings
-            </button>
+            {/* Settings & About Buttons */}
+            <div className="flex gap-2">
+              <button 
+                onClick={() => setShowSettings(true)}
+                className="w-full py-4 text-gray-500 hover:text-white text-xs font-bold uppercase tracking-[0.3em] transition-colors hover:bg-white/5 border border-transparent hover:border-gray-800"
+              >
+                Settings
+              </button>
+              <button 
+                onClick={() => setShowAbout(true)}
+                className="w-full py-4 text-gray-500 hover:text-white text-xs font-bold uppercase tracking-[0.3em] transition-colors hover:bg-white/5 border border-transparent hover:border-gray-800"
+              >
+                About
+              </button>
+            </div>
         </div>
 
         {/* Footer */}
@@ -661,6 +730,57 @@ function PlatformSelectScreen({ onSelect }: { onSelect: (platform: 'pc' | 'mobil
   );
 }
 
+function AdPopup() {
+  const popupsEnabled = useGameStore((state) => state.popupsEnabled);
+  const [popup, setPopup] = useState<{ id: number, side: 'left' | 'right' } | null>(null);
+
+  useEffect(() => {
+    if (!popupsEnabled) {
+      setPopup(null);
+      return;
+    }
+
+    const interval = setInterval(() => {
+      if (Math.random() > 0.5) {
+        setPopup({
+          id: Date.now(),
+          side: Math.random() > 0.5 ? 'left' : 'right'
+        });
+      }
+    }, 5000); // Check every 5 seconds
+
+    return () => clearInterval(interval);
+  }, [popupsEnabled]);
+
+  const removePopup = () => {
+    setPopup(null);
+  };
+
+  if (!popupsEnabled || !popup) return null;
+
+  return (
+    <div className="absolute inset-0 pointer-events-none z-50 overflow-hidden">
+        <div 
+          key={popup.id}
+          className={`absolute pointer-events-auto shadow-2xl border-2 border-red-500 bg-black animate-in fade-in zoom-in duration-300 top-1/2 -translate-y-1/2`}
+          style={{
+            [popup.side]: '20px',
+            width: '160px',
+            height: 'auto'
+          }}
+        >
+          <button 
+            onClick={removePopup}
+            className="absolute -top-3 -right-3 bg-red-600 text-white rounded-full w-6 h-6 flex items-center justify-center font-bold text-xs border border-white hover:bg-red-500 z-10"
+          >
+            X
+          </button>
+          <img src="https://i.ibb.co/spYdRg6K/2026-03-09-0xz-Kleki.png" alt="Ad" className="w-full h-auto block" />
+        </div>
+    </div>
+  );
+}
+
 function FpsLimiter() {
   const fpsLimit = useGameStore((state) => state.fpsLimit);
   const { invalidate } = useThree();
@@ -806,7 +926,7 @@ export default function App() {
                 {/* Main Enemy (1st Floor) */}
                 <Enemy />
               {/* Challenge Mode: Extra Enemy (1st Floor) */}
-              {challengeMode && (
+              {(challengeMode || threeGoombaMode) && (
                   <Enemy 
                     name="MOM GOOMBA"
                     initialPosition={[2, 1, 20]} // Next to Dad ([0, 1, 20])
@@ -823,6 +943,27 @@ export default function App() {
                     viewDistance={12}
                     fov={0.6}
                     catchDistance={1.5}
+                  />
+              )}
+
+              {/* 3 Goomba Mode: 3rd Enemy (1st Floor) */}
+              {threeGoombaMode && (
+                  <Enemy 
+                    name="BROTHER GOOMBA"
+                    initialPosition={[-2, 1, 20]} // Next to Dad
+                    patrolPoints={[
+                        new THREE.Vector3(-2, 1, 20),
+                        new THREE.Vector3(10, 1.6, 10), // Hallway
+                        new THREE.Vector3(25, 1.6, 25), // Storage
+                        new THREE.Vector3(45, 1.6, 15), // Garage
+                        new THREE.Vector3(-35, 1.6, 10), // Master Bedroom
+                    ]}
+                    scale={0.8}
+                    speed={3.0}
+                    runSpeed={5.5}
+                    viewDistance={15}
+                    fov={0.5}
+                    catchDistance={1.2}
                   />
               )}
 
@@ -847,7 +988,7 @@ export default function App() {
                 catchDistance={1.0}
               />
               {/* Challenge Mode: Extra Enemy (2nd Floor) */}
-              {challengeMode && (
+              {(challengeMode || threeGoombaMode) && (
                   <Enemy 
                     name="UNCLE GOOMBA"
                     initialPosition={[2, 21, 10]} // Next to Kid ([0, 21, 10])
@@ -867,17 +1008,39 @@ export default function App() {
                   />
               )}
 
-              {/* 3 Goomba Mode: Extra Enemy (Basement) */}
+              {/* 3 Goomba Mode: 3rd Enemy (2nd Floor) */}
               {threeGoombaMode && (
                   <Enemy 
-                    name="GRANDPA GOOMBA"
-                    initialPosition={[0, 51.6, 10]} // Basement
+                    name="AUNT GOOMBA"
+                    initialPosition={[-2, 21, 10]} // Next to Kid
                     patrolPoints={[
-                        new THREE.Vector3(0, 51.6, 10),
-                        new THREE.Vector3(10, 51.6, 10),
-                        new THREE.Vector3(10, 51.6, -10),
-                        new THREE.Vector3(-10, 51.6, -10),
-                        new THREE.Vector3(-10, 51.6, 10),
+                        new THREE.Vector3(-2, 21, 10),
+                        new THREE.Vector3(0, 21, 5), // Hallway
+                        new THREE.Vector3(-15, 21, 10), // Kid Room
+                        new THREE.Vector3(15, 21, 10), // Game Room
+                        new THREE.Vector3(0, 21, -25), // Computer Room
+                    ]}
+                    scale={1.1}
+                    speed={2.8}
+                    runSpeed={5.0}
+                    viewDistance={12}
+                    fov={0.6}
+                    catchDistance={1.3}
+                  />
+              )}
+
+              {/* 3 Goomba Mode: Extra Enemies (Basement) */}
+              {threeGoombaMode && (
+                <>
+                  <Enemy 
+                    name="GRANDPA GOOMBA"
+                    initialPosition={[0, 51.6, 5]} // Basement
+                    patrolPoints={[
+                        new THREE.Vector3(0, 51.6, 5),
+                        new THREE.Vector3(6, 51.6, 6),
+                        new THREE.Vector3(6, 51.6, -6),
+                        new THREE.Vector3(-6, 51.6, -6),
+                        new THREE.Vector3(-6, 51.6, 6),
                     ]}
                     scale={1.5} // Big and slow
                     speed={1.5}
@@ -886,6 +1049,41 @@ export default function App() {
                     fov={0.4}
                     catchDistance={1.8}
                   />
+                  <Enemy 
+                    name="GRANDMA GOOMBA"
+                    initialPosition={[2, 51.6, 5]} // Basement
+                    patrolPoints={[
+                        new THREE.Vector3(2, 51.6, 5),
+                        new THREE.Vector3(-6, 51.6, 6),
+                        new THREE.Vector3(6, 51.6, -6),
+                        new THREE.Vector3(0, 51.6, -5),
+                        new THREE.Vector3(6, 51.6, 6),
+                    ]}
+                    scale={1.3}
+                    speed={1.8}
+                    runSpeed={3.5}
+                    viewDistance={10}
+                    fov={0.5}
+                    catchDistance={1.6}
+                  />
+                  <Enemy 
+                    name="COUSIN GOOMBA"
+                    initialPosition={[-2, 51.6, 5]} // Basement
+                    patrolPoints={[
+                        new THREE.Vector3(-2, 51.6, 5),
+                        new THREE.Vector3(0, 51.6, -5),
+                        new THREE.Vector3(-6, 51.6, -6),
+                        new THREE.Vector3(6, 51.6, 6),
+                        new THREE.Vector3(-6, 51.6, 6),
+                    ]}
+                    scale={0.9}
+                    speed={4.0}
+                    runSpeed={6.5}
+                    viewDistance={14}
+                    fov={0.6}
+                    catchDistance={1.1}
+                  />
+                </>
               )}
               </Bvh>
             </Suspense>
@@ -925,6 +1123,7 @@ export default function App() {
       {gameState === 'goomos' && <GoomOS />}
       {gameState === 'won' && <WinScreen />}
       {gameState === 'jumpscare' && <JumpscareScreen />}
+      <AdPopup />
       <Loader />
     </div>
   );

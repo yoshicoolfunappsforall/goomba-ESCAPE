@@ -184,6 +184,7 @@ export const FURNITURE = [
   { position: [20, 1, 20], size: [4, 2, 8], color: '#CFD8DC', name: 'Counter' },
   { position: [20, 2, 30], size: [2, 4, 2], color: '#eee', name: 'Fridge' },
   { position: [15, 0.75, 25], size: [3, 1.5, 3], color: '#8D6E63', name: 'KitchenTable' },
+  { position: [15, 1.7, 25], size: [0.8, 0.4, 0.8], color: '#fff', name: 'Cake' }, // Yoshi Cake
   { position: [20, 1.1, 22], size: [1.5, 0.1, 1.5], color: '#212121', name: 'Stove' },
   { position: [15, 0.5, 23], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },
   { position: [15, 0.5, 27], size: [1, 1, 1], color: '#5D4037', name: 'Chair' },

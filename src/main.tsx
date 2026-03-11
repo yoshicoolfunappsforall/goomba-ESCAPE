@@ -6,9 +6,9 @@ import * as THREE from 'three';
 import { computeBoundsTree, disposeBoundsTree, acceleratedRaycast } from 'three-mesh-bvh';
 
 // Patch Three.js for global optimized raycasting
-THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree;
-THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree;
-THREE.Mesh.prototype.raycast = acceleratedRaycast;
+THREE.BufferGeometry.prototype.computeBoundsTree = computeBoundsTree as any;
+THREE.BufferGeometry.prototype.disposeBoundsTree = disposeBoundsTree as any;
+THREE.Mesh.prototype.raycast = acceleratedRaycast as any;
 
 createRoot(document.getElementById('root')!).render(
   <App />,

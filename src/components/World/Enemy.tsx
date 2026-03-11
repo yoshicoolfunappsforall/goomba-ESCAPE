@@ -283,6 +283,41 @@ export function Enemy({
             return true;
         }
     }
+
+    // Check Doors
+    const state = useGameStore.getState();
+    const doors = [
+        { position: [0, 2, 35], size: [4, 4, 0.2], open: false }, // Front Door
+        { position: [25, 2, 25], size: [0.2, 4, 3.8], open: state.storageOpen }, // Storage Door
+        { position: [1, 2, 5], size: [4, 4, 0.2], open: state.bedroomDoorOpen }, // Bedroom Door
+        { position: [-5, 2, 10], size: [0.2, 4, 2], open: state.bathroomDoorOpen }, // Bathroom Door
+        { position: [-25.5, 2, 17.5], size: [0.2, 4, 3], open: state.masterBedroomDoorOpen }, // Master Bedroom Door
+        { position: [5, 2, 9.5], size: [0.2, 4, 3], open: state.guestDoorOpen }, // Guest Room Door
+        { position: [20, 2, 15], size: [4, 4, 0.2], open: state.diningDoorOpen }, // Dining Room Door
+        { position: [-20, 2, 15], size: [4, 4, 0.2], open: state.studyDoorOpen } // Study Door
+    ];
+
+    for (const door of doors) {
+        if (door.open) continue;
+        
+        const pos = new THREE.Vector3(...door.position);
+        const size = new THREE.Vector3(...door.size);
+
+        const minY = pos.y - size.y / 2;
+        const maxY = pos.y + size.y / 2;
+        
+        if (maxY < enemyBottom || minY > enemyTop) continue;
+
+        const minX = pos.x - size.x / 2 - ENEMY_RADIUS;
+        const maxX = pos.x + size.x / 2 + ENEMY_RADIUS;
+        const minZ = pos.z - size.z / 2 - ENEMY_RADIUS;
+        const maxZ = pos.z + size.z / 2 + ENEMY_RADIUS;
+
+        if (newPos.x > minX && newPos.x < maxX && newPos.z > minZ && newPos.z < maxZ) {
+            return true;
+        }
+    }
+
     return false;
   };
 
@@ -308,6 +343,36 @@ export function Enemy({
       
       for (let i = 0; i < PRECOMPUTED_BOXES.length; i++) {
           if (ray.intersectBox(PRECOMPUTED_BOXES[i], target)) {
+              const hitDist = enemyPos.distanceTo(target);
+              if (hitDist < dist - 0.5) {
+                  return false;
+              }
+          }
+      }
+
+      // Check Doors for vision
+      const state = useGameStore.getState();
+      const doors = [
+          { position: [0, 2, 35], size: [4, 4, 0.2], open: false }, // Front Door
+          { position: [25, 2, 25], size: [0.2, 4, 3.8], open: state.storageOpen }, // Storage Door
+          { position: [1, 2, 5], size: [4, 4, 0.2], open: state.bedroomDoorOpen }, // Bedroom Door
+          { position: [-5, 2, 10], size: [0.2, 4, 2], open: state.bathroomDoorOpen }, // Bathroom Door
+          { position: [-25.5, 2, 17.5], size: [0.2, 4, 3], open: state.masterBedroomDoorOpen }, // Master Bedroom Door
+          { position: [5, 2, 9.5], size: [0.2, 4, 3], open: state.guestDoorOpen }, // Guest Room Door
+          { position: [20, 2, 15], size: [4, 4, 0.2], open: state.diningDoorOpen }, // Dining Room Door
+          { position: [-20, 2, 15], size: [4, 4, 0.2], open: state.studyDoorOpen } // Study Door
+      ];
+
+      for (const door of doors) {
+          if (door.open) continue;
+          const pos = new THREE.Vector3(...door.position);
+          const size = new THREE.Vector3(...door.size);
+          const doorBox = new THREE.Box3(
+              new THREE.Vector3(pos.x - size.x / 2, pos.y - size.y / 2, pos.z - size.z / 2),
+              new THREE.Vector3(pos.x + size.x / 2, pos.y + size.y / 2, pos.z + size.z / 2)
+          );
+          
+          if (ray.intersectBox(doorBox, target)) {
               const hitDist = enemyPos.distanceTo(target);
               if (hitDist < dist - 0.5) {
                   return false;
@@ -581,23 +646,29 @@ export function Enemy({
 
         const moveVec = moveDir.multiplyScalar(currentSpeed * delta);
         
-        // Try X movement
-        const nextX = enemyPos.clone().add(new THREE.Vector3(moveVec.x, 0, 0));
-        if (!checkCollision(nextX)) {
-            enemyRef.current.position.x += moveVec.x;
-        } else {
-            // Slide along wall? Or just stop X
-            // If stuck on X, maybe push Z slightly to slide?
-             enemyRef.current.position.z += (Math.random() - 0.5) * 0.05;
-        }
+        // Sub-stepping for collision (prevents clipping through thin walls on low FPS)
+        const steps = Math.max(1, Math.ceil(moveVec.length() / 0.1)); // Step size of 0.1 units
+        const stepVec = moveVec.clone().divideScalar(steps);
 
-        // Try Z movement
-        const nextZ = enemyRef.current.position.clone().add(new THREE.Vector3(0, 0, moveVec.z));
-        if (!checkCollision(nextZ)) {
-            enemyRef.current.position.z += moveVec.z;
-        } else {
-             // If stuck on Z, maybe push X slightly to slide?
-             enemyRef.current.position.x += (Math.random() - 0.5) * 0.05;
+        for (let i = 0; i < steps; i++) {
+            // Try X movement
+            const nextX = enemyRef.current.position.clone().add(new THREE.Vector3(stepVec.x, 0, 0));
+            if (!checkCollision(nextX)) {
+                enemyRef.current.position.x += stepVec.x;
+            } else {
+                // Slide along wall? Or just stop X
+                // If stuck on X, maybe push Z slightly to slide?
+                 enemyRef.current.position.z += (Math.random() - 0.5) * 0.05;
+            }
+
+            // Try Z movement
+            const nextZ = enemyRef.current.position.clone().add(new THREE.Vector3(0, 0, stepVec.z));
+            if (!checkCollision(nextZ)) {
+                enemyRef.current.position.z += stepVec.z;
+            } else {
+                 // If stuck on Z, maybe push X slightly to slide?
+                 enemyRef.current.position.x += (Math.random() - 0.5) * 0.05;
+            }
         }
     }
   });

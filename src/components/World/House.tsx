@@ -1,8 +1,26 @@
 import * as THREE from 'three';
-import { Grid, Text, Instances, Instance } from '@react-three/drei';
+import { Grid, Text, Instances, Instance, Billboard, useTexture } from '@react-three/drei';
 import { WALLS, FURNITURE, ITEMS, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
 import { useGameStore } from '../../store/gameStore';
 import { useShallow } from 'zustand/react/shallow';
+
+function Cake({ position, size }: { position: number[], size: number[] }) {
+  const texture = useTexture('https://i.ibb.co/Cd4v1Gp/il-fullxfull-4866776418-562x.avif');
+  return (
+    <group position={new THREE.Vector3(position[0], position[1], position[2])}>
+        <Billboard>
+            <mesh>
+                <planeGeometry args={[size[0], size[0]]} />
+                <meshBasicMaterial 
+                    map={texture} 
+                    transparent 
+                    side={THREE.DoubleSide} 
+                />
+            </mesh>
+        </Billboard>
+    </group>
+  );
+}
 
 export function House() {
   const { safeOpen, ventOpen, storageOpen, inventory, lowPerformance } = useGameStore(useShallow(state => ({
@@ -324,6 +342,10 @@ export function House() {
                     </mesh>
                 </mesh>
              )
+        }
+
+        if (item.name === 'Cake') {
+            return <Cake key={`furn-${index}`} position={item.position} size={item.size} />
         }
 
         if (item.name === 'Book') {
