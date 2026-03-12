@@ -1,6 +1,7 @@
 import { useFrame, useThree } from '@react-three/fiber';
-import { useRef, useState, useEffect } from 'react';
+import { useRef, useState, useEffect, useMemo } from 'react';
 import * as THREE from 'three';
+import { SpotLight } from '@react-three/drei';
 import { useGameStore } from '../../store/gameStore';
 import { useShallow } from 'zustand/react/shallow';
 import { WALLS, FURNITURE, WALLS_2ND_FLOOR_FINAL, FURNITURE_2ND_FLOOR } from '../../data/level';
@@ -67,6 +68,7 @@ export function Player() {
   })));
   const [velocity] = useState(new THREE.Vector3());
   const [direction] = useState(new THREE.Vector3());
+  const [inBasement, setInBasement] = useState(false);
   const lastValidPosition = useRef(new THREE.Vector3(0, 1.6, 0));
 
   useEffect(() => {
@@ -211,7 +213,8 @@ export function Player() {
 
     // Speed Boost Logic
     const hasEnergyDrink = inventory.includes('Energy Drink');
-    const currentSpeed = hasEnergyDrink ? SPEED * 1.5 : SPEED;
+    let currentSpeed = hasEnergyDrink ? SPEED * 1.5 : SPEED;
+    if (speedHackEnabled) currentSpeed *= 3;
 
     // Determine target Y based on current position (Floor Check)
     // 1st Floor: Y ~ 1.6
@@ -877,30 +880,52 @@ export function Player() {
   });
 
   const spotLightRef = useRef<THREE.SpotLight>(null);
+  const targetObj = useMemo(() => {
+    const obj = new THREE.Object3D();
+    return obj;
+  }, []);
   const inventory = useGameStore((state) => state.inventory);
   const hasFlashlight = inventory.includes('Flashlight');
   const lowPerformance = useGameStore((state) => state.lowPerformance);
+  const speedHackEnabled = useGameStore((state) => state.speedHackEnabled);
 
   useFrame((state) => {
-    if (spotLightRef.current) {
-        spotLightRef.current.position.copy(camera.position);
-        spotLightRef.current.target.position.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()));
-        spotLightRef.current.target.updateMatrixWorld();
-        spotLightRef.current.intensity = hasFlashlight ? 2 : 0;
+    const currentlyInBasement = camera.position.y > 40;
+    if (currentlyInBasement !== inBasement) {
+        setInBasement(currentlyInBasement);
+    }
+
+    if (spotLightRef.current && hasFlashlight && currentlyInBasement) {
+        // Offset flashlight slightly below and to the right of the camera
+        const offset = new THREE.Vector3(0.2, -0.2, 0);
+        offset.applyQuaternion(camera.quaternion);
+        spotLightRef.current.position.copy(camera.position).add(offset);
+        
+        targetObj.position.copy(camera.position).add(camera.getWorldDirection(new THREE.Vector3()).multiplyScalar(10));
+        targetObj.updateMatrixWorld();
     }
   });
 
   return (
     <>
-        <spotLight 
-            ref={spotLightRef}
-            intensity={1.5} 
-            angle={0.6} 
-            penumbra={0.5} 
-            distance={15} 
-            castShadow={!lowPerformance} 
-            color="#ffffee"
-        />
+        <primitive object={targetObj} />
+        {hasFlashlight && inBasement && (
+            <SpotLight 
+                ref={spotLightRef}
+                target={targetObj}
+                intensity={3} 
+                angle={0.4} 
+                penumbra={0.5} 
+                distance={25} 
+                castShadow={!lowPerformance} 
+                shadow-mapSize={[512, 512]}
+                color="#ffffff"
+                attenuation={10}
+                anglePower={4}
+                opacity={0.4}
+                transparent
+            />
+        )}
     </>
   );
 }

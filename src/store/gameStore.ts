@@ -1,8 +1,8 @@
 import { create } from 'zustand';
 
 interface GameState {
-  gameState: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused';
-  setGameState: (state: 'menu' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused') => void;
+  gameState: 'menu' | 'intro' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused';
+  setGameState: (state: 'menu' | 'intro' | 'playing' | 'laptop' | 'goomos' | 'caught' | 'won' | 'jumpscare' | 'story' | 'paused') => void;
   hasKey: boolean;
   setHasKey: (hasKey: boolean) => void;
   doorCodeKnown: boolean;
@@ -50,6 +50,21 @@ interface GameState {
   setIsMobile: (isMobile: boolean) => void;
   lowPerformance: boolean;
   setLowPerformance: (low: boolean) => void;
+  espEnabled: boolean;
+  setEspEnabled: (enabled: boolean) => void;
+  speedHackEnabled: boolean;
+  setSpeedHackEnabled: (enabled: boolean) => void;
+  godMode: boolean;
+  setGodMode: (enabled: boolean) => void;
+  speedrunTimerEnabled: boolean;
+  setSpeedrunTimerEnabled: (enabled: boolean) => void;
+  gameStartTime: number | null;
+  setGameStartTime: (time: number | null) => void;
+  gameEndTime: number | null;
+  setGameEndTime: (time: number | null) => void;
+  usedCheats: boolean;
+  setUsedCheats: (used: boolean) => void;
+  unlag: () => void;
   mobileMovement: { x: number, y: number };
   setMobileMovement: (movement: { x: number, y: number }) => void;
   mobileInteract: boolean;
@@ -96,7 +111,17 @@ interface GameState {
 
 export const useGameStore = create<GameState>((set) => ({
   gameState: 'menu',
-  setGameState: (state) => set({ gameState: state }),
+  setGameState: (newState) => set((state) => {
+    const updates: Partial<GameState> = { gameState: newState };
+    if (newState === 'playing' && state.gameStartTime === null) {
+      updates.gameStartTime = Date.now();
+      updates.gameEndTime = null;
+      updates.usedCheats = false;
+    } else if (newState === 'won' && state.gameState !== 'won') {
+      updates.gameEndTime = Date.now();
+    }
+    return updates;
+  }),
   hasKey: false,
   setHasKey: (hasKey) => set({ hasKey }),
   doorCodeKnown: false,
@@ -144,6 +169,21 @@ export const useGameStore = create<GameState>((set) => ({
   setIsMobile: (isMobile) => set({ isMobile }),
   lowPerformance: false,
   setLowPerformance: (low) => set({ lowPerformance: low }),
+  espEnabled: false,
+  setEspEnabled: (enabled) => set((state) => ({ espEnabled: enabled, usedCheats: enabled ? true : state.usedCheats })),
+  speedHackEnabled: false,
+  setSpeedHackEnabled: (enabled) => set((state) => ({ speedHackEnabled: enabled, usedCheats: enabled ? true : state.usedCheats })),
+  godMode: false,
+  setGodMode: (enabled) => set((state) => ({ godMode: enabled, usedCheats: enabled ? true : state.usedCheats })),
+  speedrunTimerEnabled: false,
+  setSpeedrunTimerEnabled: (enabled) => set({ speedrunTimerEnabled: enabled }),
+  gameStartTime: null,
+  setGameStartTime: (time) => set({ gameStartTime: time }),
+  gameEndTime: null,
+  setGameEndTime: (time) => set({ gameEndTime: time }),
+  usedCheats: false,
+  setUsedCheats: (used) => set({ usedCheats: used }),
+  unlag: () => set({ lowPerformance: true, fpsLimit: 30, fov: 70, headBobbing: false }),
   mobileMovement: { x: 0, y: 0 },
   setMobileMovement: (movement) => set({ mobileMovement: movement }),
   mobileInteract: false,
@@ -186,6 +226,9 @@ export const useGameStore = create<GameState>((set) => ({
   setInteractionText: (text) => set({ interactionText: text }),
   reset: () => set({ 
     gameState: 'menu', 
+    gameStartTime: null,
+    gameEndTime: null,
+    usedCheats: false,
     hasKey: false, 
     doorCodeKnown: false, 
     doorOpen: false,

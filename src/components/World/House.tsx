@@ -22,6 +22,8 @@ function Cake({ position, size }: { position: number[], size: number[] }) {
   );
 }
 
+useTexture.preload('https://i.ibb.co/Cd4v1Gp/il-fullxfull-4866776418-562x.avif');
+
 export function House() {
   const { safeOpen, ventOpen, storageOpen, inventory, lowPerformance } = useGameStore(useShallow(state => ({
     safeOpen: state.safeOpen,

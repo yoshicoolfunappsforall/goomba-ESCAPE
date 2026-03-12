@@ -73,9 +73,7 @@ interface EnemyProps {
   catchDistance?: number;
 }
 
-export function Enemy({
-  initialPosition = [0, 1, 20],
-  patrolPoints = [
+const DEFAULT_PATROL_POINTS = [
     new THREE.Vector3(0, 1, 20), // Hallway Center
     new THREE.Vector3(-10, 1, 25), // Living Room Left
     new THREE.Vector3(5, 1, 25), // Living Room Right
@@ -85,7 +83,19 @@ export function Enemy({
     new THREE.Vector3(-20, 1, 10), // Study (Door at -20, 15)
     new THREE.Vector3(-30, 1, 10), // Master Bedroom (Door at -25.5, 17.5)
     new THREE.Vector3(10, 1, 10), // Guest Room (Door at 5, 9.5)
-  ],
+];
+
+const OUTSIDE_PATROL_POINTS = [
+    new THREE.Vector3(0, 1, 40), // Path
+    new THREE.Vector3(-20, 1, 45), // Near Dog House
+    new THREE.Vector3(30, 1, 40), // Near Shed
+];
+
+useTexture.preload('https://i.ibb.co/hRSfLyq9/2026-03-01-0tk-Kleki.png');
+
+export function Enemy({
+  initialPosition = [0, 1, 20],
+  patrolPoints = DEFAULT_PATROL_POINTS,
   speed = 3.5,
   runSpeed = 6.0,
   scale = 1,
@@ -97,13 +107,15 @@ export function Enemy({
 }: EnemyProps) {
   const enemyRef = useRef<THREE.Group>(null);
   const { camera, scene } = useThree();
-  const { setGameState, gameState, isHiding, radioOn, tvOn, difficulty } = useGameStore(useShallow(state => ({
+  const { setGameState, gameState, isHiding, radioOn, tvOn, difficulty, espEnabled, godMode } = useGameStore(useShallow(state => ({
     setGameState: state.setGameState,
     gameState: state.gameState,
     isHiding: state.isHiding,
     radioOn: state.radioOn,
     tvOn: state.tvOn,
-    difficulty: state.difficulty
+    difficulty: state.difficulty,
+    espEnabled: state.espEnabled,
+    godMode: state.godMode
   })));
 
   // Difficulty Multipliers
@@ -137,11 +149,7 @@ export function Enemy({
   const ENEMY_RADIUS = 0.6 * scale;
 
   // Additional Outside Patrol Points (Indices 9, 10, 11)
-  const outsidePatrolPoints = [
-      new THREE.Vector3(0, 1, 40), // Path
-      new THREE.Vector3(-20, 1, 45), // Near Dog House
-      new THREE.Vector3(30, 1, 40), // Near Shed
-  ];
+  const outsidePatrolPoints = OUTSIDE_PATROL_POINTS;
 
   // Raycaster for vision
   const raycaster = useRef(new THREE.Raycaster());
@@ -419,7 +427,7 @@ export function Enemy({
     const distToPlayer = enemyPos.distanceTo(playerPos);
 
     // --- ALWAYS CHECK CATCH ---
-    if (distToPlayer < catchDistance) {
+    if (distToPlayer < catchDistance && !godMode) {
         if (!isHiding) {
             setGameState('jumpscare');
             return;
@@ -680,6 +688,12 @@ export function Enemy({
           <planeGeometry args={[2 * scale, 2 * scale]} />
           <meshBasicMaterial map={texture} transparent alphaTest={0.5} side={THREE.DoubleSide} color={aiState === 'chase' ? '#ffaaaa' : 'white'} />
         </mesh>
+        {espEnabled && (
+          <mesh>
+            <planeGeometry args={[2 * scale, 2 * scale]} />
+            <meshBasicMaterial map={texture} transparent alphaTest={0.5} side={THREE.DoubleSide} color="red" depthTest={false} opacity={0.5} />
+          </mesh>
+        )}
       </Billboard>
       {/* Floating Name/Status */}
       <Text position={[0, 1.2 * scale, 0]} fontSize={0.3 * scale} color={aiState === 'chase' ? 'red' : aiState === 'search' ? 'orange' : 'white'}>
